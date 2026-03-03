@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ants In Your Plants Interactive Garden</title>
+  <link href="https://fonts.googleapis.com/css2?family=Schoolbell&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+  <div>Ants In Your Plants Interactive Garden</div>
+  <div class="profile-image-container">
+    <img src="header_image.jpg" alt="Profile" class="profile-image" />
+  </div>
+</header>
+
+<main>
+  <div class="garden-col">
+    <div id="garden-container" aria-label="garden grid"></div>
+  </div>
+
+  <div class="panel-col">
+    <section id="info-panel">
+      <div id="defaultInfo">
+        <h2>Welcome to the Garden</h2>
+        <p>Select a plot on the left to view or edit its details. Tiles stay blank until you add a title.</p>
+      </div>
+
+      <div id="editInfo" style="display:none">
+        <h2 id="plotTitle">Plot</h2>
+
+        <div class="field">
+          <label for="titleInput">Title</label>
+          <input id="titleInput" type="text" placeholder="e.g. Tomato Bed" />
+        </div>
+
+        <div class="field">
+          <label for="descInput">Description</label>
+          <textarea id="descInput" rows="6" placeholder="Notes about this plot"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="imgInput">Image URL (optional)</label>
+          <input id="imgInput" type="text" placeholder="https://..." />
+        </div>
+
+        <div class="field">
+          <label for="colorInput">Tile color</label>
+          <input id="colorInput" type="color" value="#e8ffd6" />
+        </div>
+
+        <div class="controls">
+          <button class="btn" id="saveBtn">Save</button>
+          <button class="btn" id="clearBtn">Clear</button>
+          <button class="btn" id="exitBtn">Exit</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- Firebase Compat CDN -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyDFVgPG-oauNpgmkXWK0Wvj6z4PmyqWNY0",
+    authDomain: "aiyp-interactive-garden.firebaseapp.com",
+    projectId: "aiyp-interactive-garden",
+    storageBucket: "aiyp-interactive-garden.firebasestorage.app",
+    messagingSenderId: "388306498",
+    appId: "1:388306498:web:0d3beafd58dcff93c9bfdb",
+    measurementId: "G-5YPFK3Y376"
+  });
+</script>
+
+<script src="script.js"></script>
+
+</body>
+</html>

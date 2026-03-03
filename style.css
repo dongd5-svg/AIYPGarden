@@ -1,0 +1,136 @@
+:root{
+  --bg: #a3d4ff; 
+  --header: #3a8cff; 
+  --tan: #f4e8d2; 
+  --accent: #2f4f2f; 
+  --dirt: #cfa873;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:'Schoolbell',cursive;background:var(--bg);color:var(--accent);}
+
+header{
+  height:10vh;
+  background:var(--header);
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:2vh 2vw;
+  font-size:2.2rem;
+}
+
+.profile-image-container {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+.profile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+main{display:flex;height:calc(100vh - 10vh);}
+
+.garden-col{flex:0 0 70vw; padding:3vh; display:flex; align-items:center; justify-content:center;}
+
+#garden-container{
+  width: min(75vh, 64vw);
+  height: min(75vh, 64vw);
+  background: var(--tan);
+  border-radius:1.2rem;
+  border:0.8rem dashed rgba(47,79,47,0.12);
+  box-shadow: 0 1.2rem 3rem rgba(0,0,0,0.15);
+  display:grid;
+  grid-template-columns:repeat(12, 1fr);
+  grid-template-rows:repeat(12, 1fr);
+  gap:0;
+  overflow:hidden;
+}
+
+.tile{
+  background: #e8ffd6;
+  border: 0.25rem dashed #9fd07a;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:0.2rem;
+  font-size:0.9rem;
+  color:var(--accent);
+  user-select:none;
+  cursor:pointer;
+}
+
+.tile.empty{color: transparent;}
+
+.panel-col{flex:0 0 30vw;}
+#info-panel{
+  height:100%;
+  background:var(--tan);
+  border-left:0.6rem dashed rgba(47,79,47,0.12);
+  padding:2.4rem;
+  box-shadow: -8px 0 30px rgba(0,0,0,0.06);
+  overflow:auto;
+}
+
+#defaultInfo h2{margin-top:0}
+
+.field{margin-top:1rem}
+.field label{display:block;font-weight:bold;margin-bottom:0.5rem}
+.field input[type="text"], .field textarea{width:100%;padding:0.6rem;border:0.25rem dashed rgba(47,79,47,0.12);border-radius:0.6rem;font-family:inherit}
+
+.controls{margin-top:1.2rem;display:flex;gap:1rem}
+.btn{background:#ffd97a;border:none;padding:0.6rem 1rem;border-radius:0.6rem;cursor:pointer;font-family:inherit}
+
+@media (max-width:900px){
+  main{flex-direction:column}
+  .garden-col{padding:1.2rem}
+  #garden-container{width:92vw;height:92vw}
+  .panel-col{width:100%}
+  #info-panel{height:40vh}
+}
+
+/* ---------- LOGIN OVERLAY ---------- */
+#loginGate{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.45);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+
+.login-box{
+  background:var(--tan);
+  padding:2rem;
+  border-radius:1rem;
+  text-align:center;
+  width:90%;
+  max-width:360px;
+  display:flex;
+  flex-direction:column;
+  gap:0.6rem;
+}
+
+#loginGate,
+#loginGate * {pointer-events:auto;}
+
+.login-box button{
+  padding:0.6rem;
+  border:none;
+  border-radius:0.5rem;
+  cursor:pointer;
+  font-family:inherit;
+  font-size:1rem;
+}
+
+#googleBtn{
+  background:#4285F4;
+  color:white;
+}
