@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ants In Your Plants Interactive Garden</title>
   <link href="https://fonts.googleapis.com/css2?family=Schoolbell&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
@@ -17,10 +18,12 @@
 </header>
 
 <main>
+  <!-- Garden grid -->
   <div class="garden-col">
     <div id="garden-container" aria-label="garden grid"></div>
   </div>
 
+  <!-- Desktop side panel -->
   <div class="panel-col">
     <section id="info-panel">
       <div id="defaultInfo">
@@ -35,22 +38,18 @@
           <label for="titleInput">Title</label>
           <input id="titleInput" type="text" placeholder="e.g. Tomato Bed" />
         </div>
-
         <div class="field">
           <label for="descInput">Description</label>
           <textarea id="descInput" rows="6" placeholder="Notes about this plot"></textarea>
         </div>
-
         <div class="field">
           <label for="imgInput">Image URL (optional)</label>
           <input id="imgInput" type="text" placeholder="https://..." />
         </div>
-
         <div class="field">
           <label for="colorInput">Tile color</label>
           <input id="colorInput" type="color" value="#e8ffd6" />
         </div>
-
         <div class="controls">
           <button class="btn" id="saveBtn">Save</button>
           <button class="btn" id="clearBtn">Clear</button>
@@ -60,6 +59,36 @@
     </section>
   </div>
 </main>
+
+<!-- Mobile modal popup -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <div class="modal-handle"></div>
+    <h2 id="modal-plotTitle">Plot</h2>
+
+    <div class="field">
+      <label for="modal-titleInput">Title</label>
+      <input id="modal-titleInput" type="text" placeholder="e.g. Tomato Bed" />
+    </div>
+    <div class="field">
+      <label for="modal-descInput">Description</label>
+      <textarea id="modal-descInput" rows="5" placeholder="Notes about this plot"></textarea>
+    </div>
+    <div class="field">
+      <label for="modal-imgInput">Image URL (optional)</label>
+      <input id="modal-imgInput" type="text" placeholder="https://..." />
+    </div>
+    <div class="field">
+      <label for="modal-colorInput">Tile color</label>
+      <input id="modal-colorInput" type="color" value="#e8ffd6" />
+    </div>
+    <div class="controls">
+      <button class="btn" id="modal-saveBtn">Save</button>
+      <button class="btn" id="modal-clearBtn">Clear</button>
+      <button class="btn" id="modal-exitBtn">Exit</button>
+    </div>
+  </div>
+</div>
 
 <!-- Firebase Compat CDN -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>

@@ -95,3 +95,59 @@ exitBtn.onclick = ()=>{
   editInfo.style.display = 'none';
   defaultInfo.style.display = 'block';
 };
+
+// ---------------- MOBILE MODAL BRIDGE ----------------
+// Only activates on screens <=900px. Does not affect desktop behaviour.
+(function(){
+  const overlay     = document.getElementById('modal-overlay');
+  const mTitle      = document.getElementById('modal-plotTitle');
+  const mTitleInput = document.getElementById('modal-titleInput');
+  const mDesc       = document.getElementById('modal-descInput');
+  const mImg        = document.getElementById('modal-imgInput');
+  const mColor      = document.getElementById('modal-colorInput');
+
+  function isMobile(){ return window.innerWidth <= 900; }
+
+  // Wrap openPanel so it also opens the modal on mobile
+  const _origOpen = openPanel;
+  window.openPanel = function(id){
+    _origOpen(id); // run original — sets activeId & populates desktop inputs
+    if(!isMobile()) return;
+
+    const d = tilesData[id] || {};
+    mTitle.textContent = d.title || 'Empty Plot';
+    mTitleInput.value  = d.title       || '';
+    mDesc.value        = d.description || '';
+    mImg.value         = d.imageUrl    || '';
+    mColor.value       = d.color       || '#e8ffd6';
+    overlay.classList.add('open');
+  };
+
+  // Tap the dark backdrop to dismiss
+  overlay.addEventListener('click', function(e){
+    if(e.target === overlay) overlay.classList.remove('open');
+  });
+
+  // Modal Save — syncs values back to desktop inputs then fires original save
+  document.getElementById('modal-saveBtn').onclick = async function(){
+    if(!activeId) return;
+    titleInput.value = mTitleInput.value;
+    descInput.value  = mDesc.value;
+    imgInput.value   = mImg.value;
+    colorInput.value = mColor.value;
+    saveBtn.click();
+    overlay.classList.remove('open');
+  };
+
+  // Modal Clear
+  document.getElementById('modal-clearBtn').onclick = function(){
+    clearBtn.click();
+    overlay.classList.remove('open');
+  };
+
+  // Modal Exit
+  document.getElementById('modal-exitBtn').onclick = function(){
+    exitBtn.click();
+    overlay.classList.remove('open');
+  };
+})();
