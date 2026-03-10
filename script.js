@@ -18,10 +18,16 @@ auth.onAuthStateChanged(user => {
     loginGate.style.display = 'none';
     signOutBtn.style.display = 'inline-block';
     userNameDisplay.textContent = user.displayName || user.email;
+
+    // Set profile photo from Google account
+    if (user.photoURL) {
+      document.querySelector('.profile-image').src = user.photoURL;
+    }
   } else {
     loginGate.style.display = 'flex';
     signOutBtn.style.display = 'none';
     userNameDisplay.textContent = '';
+    document.querySelector('.profile-image').src = '';
   }
 });
 
