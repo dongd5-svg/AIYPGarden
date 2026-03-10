@@ -1,3 +1,30 @@
+// ---------------- AUTH ----------------
+const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
+const loginGate = document.getElementById('loginGate');
+const signOutBtn = document.getElementById('signOutBtn');
+const userNameDisplay = document.getElementById('userNameDisplay');
+
+document.getElementById('googleBtn').onclick = () => {
+  auth.signInWithPopup(provider).catch(err => alert(err.message));
+};
+
+signOutBtn.onclick = () => {
+  auth.signOut();
+};
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    loginGate.style.display = 'none';
+    signOutBtn.style.display = 'inline-block';
+    userNameDisplay.textContent = user.displayName || user.email;
+  } else {
+    loginGate.style.display = 'flex';
+    signOutBtn.style.display = 'none';
+    userNameDisplay.textContent = '';
+  }
+});
+
 // ---------------- FIREBASE ----------------
 const db = firebase.firestore();
 const gardenRef = db.collection("gardenTiles");

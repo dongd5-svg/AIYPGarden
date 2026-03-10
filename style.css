@@ -96,7 +96,7 @@ main{display:flex;height:calc(100vh - 10vh);}
 .controls{margin-top:1.2rem;display:flex;gap:1rem;}
 .btn{background:#ffd97a;border:none;padding:0.6rem 1rem;border-radius:0.6rem;cursor:pointer;font-family:inherit;}
 
-/* ---- LOGIN OVERLAY ---- */
+/* ---- LOGIN GATE ---- */
 #loginGate{
   position:fixed;
   inset:0;
@@ -116,24 +116,36 @@ main{display:flex;height:calc(100vh - 10vh);}
   max-width:360px;
   display:flex;
   flex-direction:column;
-  gap:0.6rem;
+  gap:0.8rem;
 }
 
-#loginGate,
-#loginGate *{pointer-events:auto;}
+.login-box h2{
+  margin:0;
+  font-size:1.6rem;
+}
 
-.login-box button{
-  padding:0.6rem;
-  border:none;
-  border-radius:0.5rem;
-  cursor:pointer;
-  font-family:inherit;
-  font-size:1rem;
+.login-box p{
+  margin:0;
+  color:#555;
 }
 
 #googleBtn{
   background:#4285F4;
   color:white;
+  border:none;
+  padding:0.75rem;
+  border-radius:0.5rem;
+  cursor:pointer;
+  font-family:inherit;
+  font-size:1rem;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:0.5rem;
+}
+
+#googleBtn:hover{
+  background:#3367d6;
 }
 
 /* ---- MOBILE MODAL hidden on desktop ---- */
