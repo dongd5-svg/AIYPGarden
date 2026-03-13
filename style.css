@@ -190,32 +190,30 @@ main{display:flex;height:calc(100vh - 10vh);}
     display:flex;
     align-items:center;
     justify-content:center;
-    transition:transform 0.28s cubic-bezier(0.32,0,0.67,0);
+    transition:transform 0.22s cubic-bezier(0.25,0.46,0.45,0.94);
   }
 
   body.modal-open .garden-col{
     transform:translateY(-38vh);
   }
 
-  /* Grid + font scale together using a CSS custom property */
+  /* Grid is square — constrain by BOTH width AND height so it never overflows */
   #garden-container{
-    --grid-size: min(88vw, calc(100vh - 56px - 4vw));
-    width: var(--grid-size);
-    height: var(--grid-size);
-    transition: width 0.28s cubic-bezier(0.32,0,0.67,0),
-                height 0.28s cubic-bezier(0.32,0,0.67,0),
-                font-size 0.28s ease;
-    /* tile font scales with grid */
-    font-size: calc(var(--grid-size) / 12 * 0.38);
+    width: min(88vw, calc(100vh - 56px - 4vw));
+    height: min(88vw, calc(100vh - 56px - 4vw));
+    /* Font scales proportionally with grid size */
+    font-size: min(calc(88vw / 12 * 0.38), calc((100vh - 56px - 4vw) / 12 * 0.38));
   }
 
   body.modal-open #garden-container{
-    --grid-size: min(88vw, 42vh);
+    width: min(88vw, 42vh);
+    height: min(88vw, 42vh);
+    font-size: min(calc(88vw / 12 * 0.38), calc(42vh / 12 * 0.38));
   }
 
   .panel-col{display:none;}
 
-  /* tile font inherits from garden-container so no override needed */
+  /* Tiles inherit font-size from the container */
   .tile{font-size:inherit;}
 
   /* ---- MODAL ---- */
@@ -243,11 +241,11 @@ main{display:flex;height:calc(100vh - 10vh);}
     padding:0.6rem 1.4rem 2.4rem;
     overflow-y:auto;
     box-shadow:0 -6px 30px rgba(0,0,0,0.2);
-    animation:slideUp 0.28s cubic-bezier(0.32,0,0.67,0) forwards;
+    animation:slideUp 0.22s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
   }
 
   #modal-overlay.closing #modal-box{
-    animation:slideDown 0.28s cubic-bezier(0.32,0,0.67,0) forwards;
+    animation:slideDown 0.22s cubic-bezier(0.55,0,0.1,1) forwards;
   }
 
   @keyframes slideUp{

@@ -92,7 +92,6 @@ function openPanel(id){
   defaultInfo.style.display = 'none';
   editInfo.style.display = 'block';
 
-  // Highlight the active tile
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
   const r = parseInt(id.match(/r(\d+)/)[1]);
   const c = parseInt(id.match(/c(\d+)/)[1]);
@@ -136,7 +135,6 @@ exitBtn.onclick = ()=>{
 };
 
 // ---------------- MOBILE MODAL BRIDGE ----------------
-// Only activates on screens <=900px. Does not affect desktop behaviour.
 (function(){
   const overlay     = document.getElementById('modal-overlay');
   const mTitle      = document.getElementById('modal-plotTitle');
@@ -152,15 +150,13 @@ exitBtn.onclick = ()=>{
     setTimeout(()=>{
       overlay.classList.remove('open','closing');
       document.body.classList.remove('modal-open');
-    }, 280);
+    }, 220);
   }
 
-  // Wrap openPanel so it also opens the modal on mobile
   const _origOpen = openPanel;
   window.openPanel = function(id){
     _origOpen(id);
     if(!isMobile()) return;
-
     const d = tilesData[id] || {};
     mTitle.textContent = d.title || 'Empty Plot';
     mTitleInput.value  = d.title       || '';
@@ -171,12 +167,10 @@ exitBtn.onclick = ()=>{
     document.body.classList.add('modal-open');
   };
 
-  // Tap the dark backdrop to dismiss
   overlay.addEventListener('click', function(e){
     if(e.target === overlay) closeModal();
   });
 
-  // Modal Save
   document.getElementById('modal-saveBtn').onclick = async function(){
     if(!activeId) return;
     titleInput.value = mTitleInput.value;
@@ -187,13 +181,11 @@ exitBtn.onclick = ()=>{
     closeModal();
   };
 
-  // Modal Clear
   document.getElementById('modal-clearBtn').onclick = function(){
     clearBtn.click();
     closeModal();
   };
 
-  // Modal Exit
   document.getElementById('modal-exitBtn').onclick = function(){
     exitBtn.click();
     closeModal();
