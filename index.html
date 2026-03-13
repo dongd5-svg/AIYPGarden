@@ -21,7 +21,8 @@
 
 <header>
   <div>Ants In Your Plants Interactive Garden</div>
-  <div style="display:flex;align-items:center;gap:1rem;">
+  <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;justify-content:flex-end;">
+    <button id="mergeModeBtn">⊞ Merge Tiles</button>
     <span id="userNameDisplay" style="font-size:1rem;color:white;"></span>
     <div class="profile-image-container">
       <img id="profileImg" src="" alt="Profile" class="profile-image" />
@@ -42,6 +43,7 @@
       <div id="defaultInfo">
         <h2>Welcome to the Garden</h2>
         <p>Select a plot on the left to view or edit its details. Tiles stay blank until you add a title.</p>
+        <p style="margin-top:1rem;font-size:0.9rem;color:#666;">Use <strong>⊞ Merge Tiles</strong> in the header to combine adjacent plots into one.</p>
       </div>
 
       <div id="editInfo" style="display:none">
@@ -67,11 +69,19 @@
           <button class="btn" id="saveBtn">Save</button>
           <button class="btn" id="clearBtn">Clear</button>
           <button class="btn" id="exitBtn">Exit</button>
+          <button id="splitBtn" style="display:none">✂ Split</button>
         </div>
       </div>
     </section>
   </div>
 </main>
+
+<!-- Floating merge toolbar -->
+<div id="merge-toolbar">
+  <span id="mergeCount">Tap tiles to select</span>
+  <button id="mergeConfirmBtn" disabled>Merge</button>
+  <button id="mergeCancelBtn">Cancel</button>
+</div>
 
 <!-- Mobile modal popup -->
 <div id="modal-overlay">
@@ -99,6 +109,7 @@
       <button class="btn" id="modal-saveBtn">Save</button>
       <button class="btn" id="modal-clearBtn">Clear</button>
       <button class="btn" id="modal-exitBtn">Exit</button>
+      <button id="modal-splitBtn" style="display:none;background:#e8c97a;border:none;padding:0.6rem 1rem;border-radius:0.6rem;cursor:pointer;font-family:inherit;">✂ Split</button>
     </div>
   </div>
 </div>
