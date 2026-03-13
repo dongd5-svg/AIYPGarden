@@ -92,6 +92,15 @@ function openPanel(id){
   defaultInfo.style.display = 'none';
   editInfo.style.display = 'block';
 
+  // Highlight the active tile
+  document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
+  const tiles = document.querySelectorAll('.tile');
+  // Find by iterating grid order
+  let r = parseInt(id.match(/r(\d+)/)[1]);
+  let c = parseInt(id.match(/c(\d+)/)[1]);
+  const idx = r * 12 + c;
+  if(tiles[idx]) tiles[idx].classList.add('active');
+
   const d = tilesData[id] || {};
   titleInput.value = d.title || '';
   descInput.value = d.description || '';
@@ -118,12 +127,14 @@ clearBtn.onclick = async ()=>{
 
   await gardenRef.doc(activeId).delete();
 
+  document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
   editInfo.style.display = 'none';
   defaultInfo.style.display = 'block';
 };
 
 // ---------------- EXIT ----------------
 exitBtn.onclick = ()=>{
+  document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
   editInfo.style.display = 'none';
   defaultInfo.style.display = 'block';
 };
@@ -140,6 +151,15 @@ exitBtn.onclick = ()=>{
 
   function isMobile(){ return window.innerWidth <= 900; }
 
+  function closeModal(){
+    overlay.classList.add('closing');
+    // garden-col transition matches 0.28s
+    setTimeout(()=>{
+      overlay.classList.remove('open','closing');
+      document.body.classList.remove('modal-open');
+    }, 280);
+  }
+
   // Wrap openPanel so it also opens the modal on mobile
   const _origOpen = openPanel;
   window.openPanel = function(id){
@@ -155,14 +175,6 @@ exitBtn.onclick = ()=>{
     overlay.classList.add('open');
     document.body.classList.add('modal-open');
   };
-
-  function closeModal(){
-    overlay.classList.add('closing');
-    setTimeout(()=>{
-      overlay.classList.remove('open','closing');
-      document.body.classList.remove('modal-open');
-    }, 220);
-  }
 
   // Tap the dark backdrop to dismiss
   overlay.addEventListener('click', function(e){
