@@ -152,7 +152,7 @@ exitBtn.onclick = ()=>{
     setTimeout(()=>{
       overlay.classList.remove('open','closing');
       document.body.classList.remove('modal-open');
-    }, 180); // matches slideDown 0.18s
+    }, 180);
   }
 
   const _origOpen = openPanel;
