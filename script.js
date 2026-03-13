@@ -123,6 +123,7 @@ clearBtn.onclick = async ()=>{
   if(!activeId) return;
   await gardenRef.doc(activeId).delete();
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
+  activeId = null;
   editInfo.style.display = 'none';
   defaultInfo.style.display = 'block';
 };
@@ -130,6 +131,7 @@ clearBtn.onclick = async ()=>{
 // ---------------- EXIT ----------------
 exitBtn.onclick = ()=>{
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
+  activeId = null;
   editInfo.style.display = 'none';
   defaultInfo.style.display = 'block';
 };
@@ -150,7 +152,7 @@ exitBtn.onclick = ()=>{
     setTimeout(()=>{
       overlay.classList.remove('open','closing');
       document.body.classList.remove('modal-open');
-    }, 150);
+    }, 180); // matches slideDown 0.18s
   }
 
   const _origOpen = openPanel;

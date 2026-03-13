@@ -181,26 +181,45 @@ main{display:flex;height:calc(100vh - 10vh);}
 
   header{font-size:1.3rem;height:auto;padding:2vw 3vw;}
 
-  main{display:block;}
+  /* Full screen minus header, flex so garden-col can center */
+  main{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    height:calc(100vh - 56px);
+  }
 
   .garden-col{
     width:100%;
-    padding:2vw;
     display:flex;
     align-items:center;
     justify-content:center;
+    padding:0;
+    /* Slide up when modal opens — same duration as modal */
     transition:transform 0.18s ease-out;
   }
 
   body.modal-open .garden-col{
-    transform:translateY(-36vh);
+    transform:translateY(-30vh);
   }
 
-  /* 75vmin guarantees the grid fits on screen in any orientation with room for the header */
+  /*
+    Always fits on screen:
+    - min(90vw, 80vh) keeps it inside both width AND height
+    - When modal opens it shrinks to min(90vw, 36vh) so it fits above the sheet
+    - Font scales with grid size
+  */
   #garden-container{
-    width:75vmin;
-    height:75vmin;
-    font-size:calc(75vmin / 12 * 0.38);
+    --g: min(90vw, 80vh);
+    width:var(--g);
+    height:var(--g);
+    font-size:calc(var(--g) / 12 * 0.4);
+    transition:width 0.18s ease-out, height 0.18s ease-out, font-size 0.18s ease-out;
+  }
+
+  body.modal-open #garden-container{
+    --g: min(90vw, 36vh);
   }
 
   .panel-col{display:none;}
@@ -236,7 +255,7 @@ main{display:flex;height:calc(100vh - 10vh);}
   }
 
   #modal-overlay.closing #modal-box{
-    animation:slideDown 0.15s ease-in forwards;
+    animation:slideDown 0.18s ease-in forwards;
   }
 
   @keyframes slideUp{
