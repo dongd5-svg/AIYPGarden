@@ -158,7 +158,7 @@ exitBtn.onclick = ()=>{
   // Wrap openPanel so it also opens the modal on mobile
   const _origOpen = openPanel;
   window.openPanel = function(id){
-    _origOpen(id); // run original — sets activeId & populates desktop inputs
+    _origOpen(id);
     if(!isMobile()) return;
 
     const d = tilesData[id] || {};
@@ -176,7 +176,7 @@ exitBtn.onclick = ()=>{
     if(e.target === overlay) closeModal();
   });
 
-  // Modal Save — syncs values back to desktop inputs then fires original save
+  // Modal Save
   document.getElementById('modal-saveBtn').onclick = async function(){
     if(!activeId) return;
     titleInput.value = mTitleInput.value;
