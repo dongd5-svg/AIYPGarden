@@ -94,12 +94,10 @@ function openPanel(id){
 
   // Highlight the active tile
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
+  const r = parseInt(id.match(/r(\d+)/)[1]);
+  const c = parseInt(id.match(/c(\d+)/)[1]);
   const tiles = document.querySelectorAll('.tile');
-  // Find by iterating grid order
-  let r = parseInt(id.match(/r(\d+)/)[1]);
-  let c = parseInt(id.match(/c(\d+)/)[1]);
-  const idx = r * 12 + c;
-  if(tiles[idx]) tiles[idx].classList.add('active');
+  if(tiles[r * 12 + c]) tiles[r * 12 + c].classList.add('active');
 
   const d = tilesData[id] || {};
   titleInput.value = d.title || '';
@@ -124,9 +122,7 @@ saveBtn.onclick = async ()=>{
 // ---------------- CLEAR ----------------
 clearBtn.onclick = async ()=>{
   if(!activeId) return;
-
   await gardenRef.doc(activeId).delete();
-
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
   editInfo.style.display = 'none';
   defaultInfo.style.display = 'block';
@@ -153,7 +149,6 @@ exitBtn.onclick = ()=>{
 
   function closeModal(){
     overlay.classList.add('closing');
-    // garden-col transition matches 0.28s
     setTimeout(()=>{
       overlay.classList.remove('open','closing');
       document.body.classList.remove('modal-open');
