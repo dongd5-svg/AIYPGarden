@@ -75,6 +75,7 @@ function renderGrid(){
       const div = document.createElement('div');
 
       div.className = 'tile';
+      div._tileId = id;
       div.textContent = d.title || '';
       div.style.background = d.color || '#e8ffd6';
 
@@ -91,6 +92,11 @@ function openPanel(id){
   activeId = id;
   defaultInfo.style.display = 'none';
   editInfo.style.display = 'block';
+
+  // Highlight active tile
+  document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
+  const activeTile = [...document.querySelectorAll('.tile')].find(t => t._tileId === id);
+  if(activeTile) activeTile.classList.add('active');
 
   const d = tilesData[id] || {};
   titleInput.value = d.title || '';
@@ -118,12 +124,14 @@ clearBtn.onclick = async ()=>{
 
   await gardenRef.doc(activeId).delete();
 
+  document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
   editInfo.style.display = 'none';
   defaultInfo.style.display = 'block';
 };
 
 // ---------------- EXIT ----------------
 exitBtn.onclick = ()=>{
+  document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
   editInfo.style.display = 'none';
   defaultInfo.style.display = 'block';
 };
@@ -174,12 +182,14 @@ exitBtn.onclick = ()=>{
   // Modal Clear
   document.getElementById('modal-clearBtn').onclick = function(){
     clearBtn.click();
+    document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
     overlay.classList.remove('open');
   };
 
   // Modal Exit
   document.getElementById('modal-exitBtn').onclick = function(){
     exitBtn.click();
+    document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
     overlay.classList.remove('open');
   };
 })();
