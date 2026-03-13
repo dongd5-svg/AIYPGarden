@@ -153,11 +153,15 @@ exitBtn.onclick = ()=>{
     mImg.value         = d.imageUrl    || '';
     mColor.value       = d.color       || '#e8ffd6';
     overlay.classList.add('open');
+    document.body.classList.add('modal-open');
   };
 
   function closeModal(){
     overlay.classList.add('closing');
-    setTimeout(()=>{ overlay.classList.remove('open','closing'); }, 220);
+    setTimeout(()=>{
+      overlay.classList.remove('open','closing');
+      document.body.classList.remove('modal-open');
+    }, 220);
   }
 
   // Tap the dark backdrop to dismiss
