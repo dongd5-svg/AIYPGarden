@@ -150,7 +150,7 @@ exitBtn.onclick = ()=>{
     setTimeout(()=>{
       overlay.classList.remove('open','closing');
       document.body.classList.remove('modal-open');
-    }, 220);
+    }, 150);
   }
 
   const _origOpen = openPanel;
