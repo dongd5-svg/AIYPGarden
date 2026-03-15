@@ -17,7 +17,7 @@
 html, body {
   height: 100%;
   margin: 0;
-  font-family: 'Nunito', sans-serif;
+  font-family: 'Schoolbell', cursive;
   background: var(--bg);
   color: var(--accent);
 }
@@ -612,60 +612,171 @@ body.merge-mode .tile.merge-selected {
 .btn { background: #ffd97a; border: none; padding: 0.6rem 1rem; border-radius: 0.6rem; cursor: pointer; font-family: inherit; font-weight: 600; }
 .btn:hover { filter: brightness(0.92); }
 
-/* ---- MOBILE TILE MODAL ---- */
+/* ---- MOBILE TILE MODAL — hidden on desktop ---- */
 #modal-overlay { display: none; }
 
-/* ============ RESPONSIVE ============ */
+/* ============ MOBILE ============ */
 @media (max-width: 900px) {
-  #main-nav { padding: 0 0.8rem; }
-  .nav-logo { font-size: 1rem; }
+
+  /* --- Nav --- */
+  #main-nav {
+    height: auto;
+    min-height: 52px;
+    padding: 0.4rem 0.8rem;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .nav-logo { font-size: 1rem; flex: 1 1 auto; }
+  .nav-links { order: 3; flex: 0 0 100%; justify-content: center; gap: 0.3rem; padding-bottom: 0.3rem; }
+  .nav-btn { font-size: 0.82rem; padding: 0.3rem 0.8rem; }
+  .nav-user { order: 2; gap: 0.4rem; }
   #userNameDisplay { display: none; }
-  #signOutBtn { font-size: 0.72rem; padding: 0.25rem 0.5rem; }
+  #signOutBtn { font-size: 0.72rem; padding: 0.22rem 0.5rem; }
+  .profile-image-container { width: 30px; height: 30px; }
 
-  .page { padding: 1.2rem 1rem; }
-  .page-header h1 { font-size: 1.5rem; }
-  .gardens-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.9rem; }
-  .garden-card { padding: 1rem; }
-  .garden-card h3 { font-size: 1.1rem; }
+  /* --- Home / Public pages --- */
+  .page { padding: 1rem; min-height: auto; }
+  .page-header { margin-bottom: 1rem; gap: 0.6rem; }
+  .page-header h1 { font-size: 1.6rem; }
+  .page-subtitle { font-size: 0.85rem; }
+  .btn-create { font-size: 0.9rem; padding: 0.55rem 1rem; }
 
-  #garden-view-layout { display: block; height: calc(100vh - 60px - 48px); }
-  .garden-col { width: 100%; height: 100%; padding: 1.5vw; flex: none; transition: transform 0.18s ease-out; }
-  #garden-container { width: 97vw; height: 97vw; font-size: 0.5rem; }
+  .gardens-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+  }
+  .garden-card { padding: 0.8rem; }
+  .garden-card h3 { font-size: 1.05rem; }
+  .garden-card-meta { font-size: 0.72rem; gap: 0.4rem; }
+  .garden-card-preview { margin-bottom: 0.6rem; }
+
+  #empty-state, #public-empty-state { padding: 3rem 1rem; }
+  .empty-icon { font-size: 3rem; }
+
+  /* --- Create garden modal → bottom sheet on mobile --- */
+  #create-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  #create-modal {
+    border-radius: 1.4rem 1.4rem 0 0;
+    max-width: 100%;
+    max-height: 92vh;
+    padding: 0.5rem 1.2rem 2.5rem;
+    animation: slideUp 0.22s ease-out;
+  }
+  #create-modal::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: rgba(47,79,47,0.2);
+    border-radius: 2px;
+    margin: 0.7rem auto 1rem;
+  }
+  .modal-close-btn { top: 0.6rem; right: 0.8rem; }
+  .create-modal-icon { font-size: 2rem; }
+  #create-modal h2 { font-size: 1.5rem; }
+  .grid-size-inputs { gap: 0.6rem; }
+  .size-stepper input { width: 50px; font-size: 1rem; }
+
+  /* --- Garden view page --- */
+  .garden-page-header {
+    height: auto;
+    min-height: 48px;
+    padding: 0.4rem 0.7rem;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .back-btn { font-size: 0.8rem; padding: 0.28rem 0.6rem; }
+  .garden-title-area h1 { font-size: 1rem; }
+  .owner-badge { font-size: 0.68rem; }
+  .garden-page-actions { gap: 0.3rem; }
+  .header-action-btn { font-size: 0.7rem; padding: 0.22rem 0.45rem; }
+
+  /* Garden layout: full-width scrollable column */
+  #garden-view-layout {
+    display: block;
+    height: auto;
+    min-height: calc(100svh - 52px - 48px);
+  }
+
+  .garden-col {
+    flex: none;
+    width: 100%;
+    height: auto;
+    padding: 2vw;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    transition: transform 0.18s ease-out;
+  }
+
+  /* Garden grid: square, fills screen width */
+  #garden-container {
+    width: 96vw !important;
+    height: 96vw !important;
+    font-size: clamp(7px, 2vw, 13px);
+  }
+
+  /* Shrink when tile modal is open */
+  body.modal-open .garden-col {
+    transform: translateY(-32vh);
+  }
+  body.modal-open #garden-container {
+    width: min(88vw, 36vh) !important;
+    height: min(88vw, 36vh) !important;
+    font-size: clamp(5px, 1.5vw, 10px);
+  }
+
   .panel-col { display: none; }
 
-  body.modal-open .garden-col { transform: translateY(-28vh); }
-  body.modal-open #garden-container { width: min(90vw, 38vh); height: min(90vw, 38vh); font-size: calc(min(90vw, 38vh) / 20 * 0.4); }
+  /* Merge toolbar */
+  #merge-toolbar {
+    bottom: 0.5rem;
+    font-size: 0.82rem;
+    padding: 0.45rem 0.9rem;
+    gap: 0.5rem;
+    white-space: nowrap;
+  }
 
-  #merge-toolbar { bottom: 0.5rem; font-size: 0.8rem; padding: 0.4rem 0.8rem; gap: 0.5rem; }
-
-  .garden-page-header { height: 48px; padding: 0 0.8rem; gap: 0.5rem; }
-  .garden-title-area h1 { font-size: 1.1rem; }
-  .header-action-btn { font-size: 0.72rem; padding: 0.25rem 0.5rem; }
-
+  /* --- Tile bottom-sheet modal --- */
   #modal-overlay {
     display: none;
     position: fixed;
     inset: 0;
-    background: transparent;
+    background: rgba(0,0,0,0.25);
     z-index: 1000;
     align-items: flex-end;
     justify-content: center;
     pointer-events: none;
   }
   #modal-overlay.open { display: flex; pointer-events: auto; }
+
   #modal-box {
     background: var(--tan);
     width: 100%;
-    max-height: 55vh;
+    max-height: 60vh;
     border-radius: 1.4rem 1.4rem 0 0;
-    padding: 0.6rem 1.4rem 2.4rem;
+    padding: 0.5rem 1.2rem 2.4rem;
     overflow-y: auto;
-    box-shadow: 0 -6px 30px rgba(0,0,0,0.2);
+    box-shadow: 0 -6px 30px rgba(0,0,0,0.18);
     animation: slideUp 0.18s ease-out forwards;
   }
   #modal-overlay.closing #modal-box { animation: slideDown 0.18s ease-in forwards; }
-  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-  @keyframes slideDown { from { transform: translateY(0); } to { transform: translateY(100%); } }
-  .modal-handle { width: 40px; height: 4px; background: rgba(47,79,47,0.25); border-radius: 2px; margin: 0.8rem auto 1.2rem; }
-  #modal-box h2 { margin-top: 0; font-family: 'Schoolbell', cursive; }
+
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: rgba(47,79,47,0.22);
+    border-radius: 2px;
+    margin: 0.7rem auto 1rem;
+  }
+  #modal-box h2 { margin-top: 0; font-size: 1.3rem; }
+  #modal-box .field { margin-top: 0.7rem; }
+  #modal-box .field label { font-size: 0.85rem; margin-bottom: 0.3rem; }
+  #modal-box .controls { margin-top: 0.9rem; gap: 0.5rem; }
+  #modal-box .btn { padding: 0.5rem 0.8rem; font-size: 0.9rem; }
 }
+
+@keyframes slideUp   { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes slideDown { from { transform: translateY(0); }    to { transform: translateY(100%); } }
