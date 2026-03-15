@@ -1,76 +1,398 @@
-// ---------------- AUTH ----------------
-const auth = firebase.auth();
+// ================================================================
+// AUTH
+// ================================================================
+const auth     = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
-const loginGate = document.getElementById('loginGate');
-const signOutBtn = document.getElementById('signOutBtn');
+const db       = firebase.firestore();
+
+const loginGate       = document.getElementById('loginGate');
+const appShell        = document.getElementById('app');
+const signOutBtn      = document.getElementById('signOutBtn');
 const userNameDisplay = document.getElementById('userNameDisplay');
 
-document.getElementById('googleBtn').onclick = () => {
+document.getElementById('googleBtn').onclick = () =>
   auth.signInWithPopup(provider).catch(err => alert(err.message));
-};
 
 signOutBtn.onclick = () => auth.signOut();
 
+let currentUser = null;
+
 auth.onAuthStateChanged(user => {
+  currentUser = user;
   if (user) {
     loginGate.style.display = 'none';
-    signOutBtn.style.display = 'inline-block';
+    appShell.style.display  = 'block';
     userNameDisplay.textContent = user.displayName || user.email;
     if (user.photoURL) document.getElementById('profileImg').src = user.photoURL;
+    navigateTo('home');
+    loadMyGardens();
   } else {
     loginGate.style.display = 'flex';
-    signOutBtn.style.display = 'none';
+    appShell.style.display  = 'none';
     userNameDisplay.textContent = '';
     document.getElementById('profileImg').src = '';
   }
 });
 
-// ---------------- FIREBASE ----------------
-const db = firebase.firestore();
-const gardenRef = db.collection("gardenTiles");
+// ================================================================
+// PAGE NAVIGATION
+// ================================================================
+let currentPage = 'home';
 
-// ---------------- ELEMENTS ----------------
-const garden        = document.getElementById('garden-container');
-const editInfo      = document.getElementById('editInfo');
-const defaultInfo   = document.getElementById('defaultInfo');
-const titleInput    = document.getElementById('titleInput');
-const descInput     = document.getElementById('descInput');
-const imgInput      = document.getElementById('imgInput');
-const colorInput    = document.getElementById('colorInput');
-const saveBtn       = document.getElementById('saveBtn');
-const clearBtn      = document.getElementById('clearBtn');
-const exitBtn       = document.getElementById('exitBtn');
-const splitBtn      = document.getElementById('splitBtn');
+function navigateTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
-let tilesData = {};
-let activeId  = null;
+  const pageEl = document.getElementById('page-' + page);
+  if (pageEl) pageEl.classList.add('active');
 
-function tileId(r, c) { return `r${r}c${c}`; }
-function tileRC(id)   { return { r: parseInt(id.match(/r(\d+)/)[1]), c: parseInt(id.match(/c(\d+)/)[1]) }; }
+  const navBtn = document.querySelector(`.nav-btn[data-page="${page}"]`);
+  if (navBtn) navBtn.classList.add('active');
 
-// ---------------- REALTIME SYNC ----------------
-gardenRef.onSnapshot(snapshot => {
-  tilesData = {};
-  snapshot.forEach(doc => { tilesData[doc.id] = doc.data(); });
-  renderGrid();
+  currentPage = page;
+
+  if (page === 'public') loadPublicGardens();
+}
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.onclick = () => {
+    if (currentGardenId) exitGarden();
+    navigateTo(btn.dataset.page);
+  };
 });
 
-// ---------------- RENDER GRID ----------------
+document.getElementById('navLogo').onclick = () => {
+  if (currentGardenId) exitGarden();
+  navigateTo('home');
+};
+
+// ================================================================
+// HOME PAGE – MY GARDENS
+// ================================================================
+const gardensCol  = document.getElementById('gardens');
+const emptyState  = document.getElementById('empty-state');
+const myGrid      = document.getElementById('my-gardens-grid');
+
+document.getElementById('createGardenBtn').onclick  = openCreateModal;
+document.getElementById('emptyCreateBtn').onclick   = openCreateModal;
+
+let myGardensUnsubscribe = null;
+
+function loadMyGardens() {
+  if (myGardensUnsubscribe) myGardensUnsubscribe();
+
+  myGardensUnsubscribe = db.collection('gardens')
+    .where('ownerId', '==', currentUser.uid)
+    .orderBy('createdAt', 'desc')
+    .onSnapshot(snapshot => {
+      myGrid.innerHTML = '';
+      if (snapshot.empty) {
+        emptyState.style.display = 'block';
+        return;
+      }
+      emptyState.style.display = 'none';
+      snapshot.forEach(doc => {
+        myGrid.appendChild(buildGardenCard(doc.id, doc.data(), true));
+      });
+    }, err => {
+      // If index not ready yet, fall back to unordered query
+      db.collection('gardens')
+        .where('ownerId', '==', currentUser.uid)
+        .get()
+        .then(snapshot => {
+          myGrid.innerHTML = '';
+          if (snapshot.empty) { emptyState.style.display = 'block'; return; }
+          emptyState.style.display = 'none';
+          snapshot.forEach(doc => myGrid.appendChild(buildGardenCard(doc.id, doc.data(), true)));
+        });
+    });
+}
+
+// ================================================================
+// PUBLIC GARDENS
+// ================================================================
+const publicGrid       = document.getElementById('public-gardens-grid');
+const publicEmptyState = document.getElementById('public-empty-state');
+
+function loadPublicGardens() {
+  db.collection('gardens')
+    .where('visibility', '==', 'public')
+    .get()
+    .then(snapshot => {
+      publicGrid.innerHTML = '';
+      if (snapshot.empty) { publicEmptyState.style.display = 'block'; return; }
+      publicEmptyState.style.display = 'none';
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const isOwn = currentUser && data.ownerId === currentUser.uid;
+        publicGrid.appendChild(buildGardenCard(doc.id, data, isOwn));
+      });
+    });
+}
+
+// ================================================================
+// GARDEN CARD BUILDER
+// ================================================================
+function buildGardenCard(gardenId, data, isOwn) {
+  const card = document.createElement('div');
+  card.className = 'garden-card';
+
+  const rows = data.rows || 6;
+  const cols = data.cols || 6;
+
+  // Mini grid preview
+  const preview = document.createElement('div');
+  preview.className = 'garden-card-preview';
+  preview.style.gridTemplateColumns = `repeat(${Math.min(cols, 12)}, 1fr)`;
+  preview.style.gridTemplateRows    = `repeat(${Math.min(rows, 12)}, 1fr)`;
+  const previewCount = Math.min(rows, 12) * Math.min(cols, 12);
+  for (let i = 0; i < previewCount; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'mini-tile';
+    // Color a few cells from tile data if available
+    preview.appendChild(cell);
+  }
+
+  // Populate mini preview colors if we have snapshot data
+  if (data.previewColors) {
+    const cells = preview.querySelectorAll('.mini-tile');
+    data.previewColors.forEach((color, i) => {
+      if (cells[i]) cells[i].style.background = color;
+    });
+  }
+
+  const badge = data.visibility === 'public'
+    ? '<span class="garden-card-badge badge-public">🌍 Public</span>'
+    : '<span class="garden-card-badge badge-private">🔒 Private</span>';
+
+  const ownerLine = !isOwn && data.ownerName
+    ? `<div class="garden-card-owner">by ${data.ownerName}</div>`
+    : '';
+
+  card.innerHTML = `
+    <div class="garden-card-meta">
+      ${badge}
+      <span>${rows}×${cols} grid</span>
+    </div>
+    <h3>${escHtml(data.name || 'Unnamed Garden')}</h3>
+    ${ownerLine}
+  `;
+  card.insertBefore(preview, card.firstChild);
+
+  card.onclick = () => openGarden(gardenId, data, isOwn);
+  return card;
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ================================================================
+// CREATE GARDEN MODAL
+// ================================================================
+const createOverlay = document.getElementById('create-modal-overlay');
+const gardenNameInput = document.getElementById('gardenNameInput');
+const gridRowsInput   = document.getElementById('gridRows');
+const gridColsInput   = document.getElementById('gridCols');
+const gridPreview     = document.getElementById('gridPreview');
+const gridPreviewLabel= document.getElementById('gridPreviewLabel');
+
+let selectedVisibility = 'private';
+
+function openCreateModal() {
+  gardenNameInput.value = '';
+  gridRowsInput.value = '6';
+  gridColsInput.value = '6';
+  selectedVisibility = 'private';
+  document.getElementById('visPrivate').classList.add('active');
+  document.getElementById('visPublic').classList.remove('active');
+  updateGridPreview();
+  createOverlay.classList.add('open');
+  setTimeout(() => gardenNameInput.focus(), 200);
+}
+
+document.getElementById('createModalCloseBtn').onclick = () =>
+  createOverlay.classList.remove('open');
+
+createOverlay.addEventListener('click', e => {
+  if (e.target === createOverlay) createOverlay.classList.remove('open');
+});
+
+// Steppers
+document.querySelectorAll('.stepper-btn').forEach(btn => {
+  btn.onclick = () => {
+    const target = document.getElementById(btn.dataset.target);
+    const dir    = parseInt(btn.dataset.dir);
+    const min    = parseInt(target.min) || 2;
+    const max    = parseInt(target.max) || 20;
+    const val    = Math.min(max, Math.max(min, parseInt(target.value) + dir));
+    target.value = val;
+    updateGridPreview();
+  };
+});
+
+gridRowsInput.addEventListener('input', updateGridPreview);
+gridColsInput.addEventListener('input', updateGridPreview);
+
+function updateGridPreview() {
+  const r = Math.min(20, Math.max(2, parseInt(gridRowsInput.value) || 6));
+  const c = Math.min(20, Math.max(2, parseInt(gridColsInput.value) || 6));
+  gridPreview.style.gridTemplateColumns = `repeat(${Math.min(c, 16)}, 1fr)`;
+  gridPreview.style.gridTemplateRows    = `repeat(${Math.min(r, 16)}, 1fr)`;
+  gridPreview.innerHTML = '';
+  const count = Math.min(r, 16) * Math.min(c, 16);
+  for (let i = 0; i < count; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'preview-cell';
+    gridPreview.appendChild(cell);
+  }
+  gridPreviewLabel.textContent = `${r * c} plot${r * c !== 1 ? 's' : ''}`;
+}
+
+// Visibility buttons
+document.getElementById('visPrivate').onclick = () => setVisibility('private');
+document.getElementById('visPublic').onclick  = () => setVisibility('public');
+function setVisibility(val) {
+  selectedVisibility = val;
+  document.getElementById('visPrivate').classList.toggle('active', val === 'private');
+  document.getElementById('visPublic').classList.toggle('active', val === 'public');
+}
+
+document.getElementById('confirmCreateGardenBtn').onclick = async () => {
+  const name = gardenNameInput.value.trim();
+  if (!name) { gardenNameInput.focus(); return; }
+
+  const rows = Math.min(20, Math.max(2, parseInt(gridRowsInput.value) || 6));
+  const cols = Math.min(20, Math.max(2, parseInt(gridColsInput.value) || 6));
+
+  const docRef = await db.collection('gardens').add({
+    name,
+    rows,
+    cols,
+    ownerId:    currentUser.uid,
+    ownerName:  currentUser.displayName || currentUser.email,
+    visibility: selectedVisibility,
+    createdAt:  firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt:  firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  createOverlay.classList.remove('open');
+  openGarden(docRef.id, { name, rows, cols, ownerId: currentUser.uid, visibility: selectedVisibility }, true);
+};
+
+// ================================================================
+// GARDEN VIEW
+// ================================================================
+let currentGardenId   = null;
+let currentGardenData = null;
+let isGardenOwner     = false;
+let tilesData         = {};
+let activeId          = null;
+let tilesUnsubscribe  = null;
+
+function tileId(r, c)  { return `r${r}c${c}`; }
+function tileRC(id)    { return { r: parseInt(id.match(/r(\d+)/)[1]), c: parseInt(id.match(/c(\d+)/)[1]) }; }
+
+function openGarden(gardenId, gardenData, isOwn) {
+  currentGardenId   = gardenId;
+  currentGardenData = gardenData;
+  isGardenOwner     = isOwn;
+
+  // Update header
+  document.getElementById('gardenTitle').textContent = gardenData.name || 'Garden';
+  document.getElementById('gardenOwnerBadge').textContent =
+    isOwn ? '' : `by ${gardenData.ownerName || 'unknown'}`;
+
+  document.getElementById('togglePublicBtn').style.display = isOwn ? 'inline-block' : 'none';
+  updateTogglePublicBtn();
+
+  // Navigate to garden page
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-garden').classList.add('active');
+  currentPage = 'garden';
+
+  // Set up grid dimensions
+  const rows = gardenData.rows || 6;
+  const cols = gardenData.cols || 6;
+  const container = document.getElementById('garden-container');
+
+  // Size the container
+  const maxSize = Math.min(window.innerWidth > 900 ? window.innerHeight * 0.75 : window.innerWidth * 0.96, 700);
+  container.style.width  = maxSize + 'px';
+  container.style.height = maxSize + 'px';
+  container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  container.style.gridTemplateRows    = `repeat(${rows}, 1fr)`;
+
+  // Tile font size based on grid size
+  const tilePx = maxSize / Math.max(rows, cols);
+  container.style.fontSize = Math.max(8, Math.min(14, tilePx * 0.35)) + 'px';
+
+  // Reset panel
+  activeId = null;
+  document.getElementById('editInfo').style.display  = 'none';
+  document.getElementById('defaultInfo').style.display = 'block';
+
+  // Subscribe to tiles
+  if (tilesUnsubscribe) tilesUnsubscribe();
+  tilesData = {};
+  tilesUnsubscribe = db.collection('gardens').doc(gardenId)
+    .collection('tiles')
+    .onSnapshot(snapshot => {
+      tilesData = {};
+      snapshot.forEach(doc => { tilesData[doc.id] = doc.data(); });
+      renderGrid();
+    });
+}
+
+function exitGarden() {
+  if (tilesUnsubscribe) { tilesUnsubscribe(); tilesUnsubscribe = null; }
+  if (mergeMode) toggleMergeMode(false);
+  currentGardenId = null;
+  activeId = null;
+  tilesData = {};
+}
+
+document.getElementById('backBtn').onclick = () => {
+  exitGarden();
+  navigateTo(currentUser ? 'home' : 'public');
+};
+
+// Toggle public/private
+document.getElementById('togglePublicBtn').onclick = async () => {
+  if (!currentGardenId || !isGardenOwner) return;
+  const newVis = currentGardenData.visibility === 'public' ? 'private' : 'public';
+  await db.collection('gardens').doc(currentGardenId).update({ visibility: newVis });
+  currentGardenData.visibility = newVis;
+  updateTogglePublicBtn();
+};
+
+function updateTogglePublicBtn() {
+  const btn = document.getElementById('togglePublicBtn');
+  if (!currentGardenData) return;
+  btn.textContent = currentGardenData.visibility === 'public' ? '🔒 Make Private' : '🌍 Make Public';
+}
+
+// ================================================================
+// RENDER GRID
+// ================================================================
 function renderGrid() {
+  if (!currentGardenData) return;
+  const garden = document.getElementById('garden-container');
+  const rows = currentGardenData.rows || 6;
+  const cols = currentGardenData.cols || 6;
+
   garden.innerHTML = '';
 
-  for (let r = 0; r < 12; r++) {
-    for (let c = 0; c < 12; c++) {
-      const id = tileId(r, c);
-      const d  = tilesData[id] || {};
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const id  = tileId(r, c);
+      const d   = tilesData[id] || {};
       const div = document.createElement('div');
 
       div.className = 'tile';
       div.dataset.id = id;
       div.style.background = d.color || '#e8ffd6';
 
-      // Only show text on the "primary" tile of a merge group
-      // (top-left-most tile) so text doesn't repeat on every cell
       const group = d.mergeGroup;
       if (group) {
         const isLeader = isMergeLeader(id, group);
@@ -81,24 +403,27 @@ function renderGrid() {
         if (!d.title) div.classList.add('empty');
       }
 
-      // Merged border hiding
-      applyMergeBorderClasses(div, id, r, c);
+      applyMergeBorderClasses(div, id, r, c, rows, cols);
 
       if (id === activeId) div.classList.add('active');
 
-      div.onclick = () => handleTileClick(id);
+      if (isGardenOwner) {
+        div.onclick = () => handleTileClick(id);
+      } else {
+        div.style.cursor = 'default';
+        // Read-only: clicking shows info only
+        div.onclick = () => showReadOnlyInfo(id);
+      }
+
       garden.appendChild(div);
     }
   }
 
-  // Re-apply merge mode UI if active
   if (mergeMode) applyMergeModeUI();
 }
 
-// Returns true if this tile is the top-left-most in its merge group
 function isMergeLeader(id, group) {
   const members = Object.keys(tilesData).filter(k => tilesData[k].mergeGroup === group);
-  // Sort by row then col; first one is the leader
   members.sort((a, b) => {
     const ra = tileRC(a), rb = tileRC(b);
     return ra.r !== rb.r ? ra.r - rb.r : ra.c - rb.c;
@@ -106,46 +431,64 @@ function isMergeLeader(id, group) {
   return members[0] === id;
 }
 
-// Hides the border between two merged tiles
-function applyMergeBorderClasses(div, id, r, c) {
+function applyMergeBorderClasses(div, id, r, c, rows, cols) {
   const d = tilesData[id] || {};
   const g = d.mergeGroup;
   if (!g) return;
-
-  const top    = r > 0  ? (tilesData[tileId(r-1, c)] || {}) : {};
-  const bottom = r < 11 ? (tilesData[tileId(r+1, c)] || {}) : {};
-  const left   = c > 0  ? (tilesData[tileId(r, c-1)] || {}) : {};
-  const right  = c < 11 ? (tilesData[tileId(r, c+1)] || {}) : {};
-
+  const top    = r > 0       ? (tilesData[tileId(r-1, c)] || {}) : {};
+  const bottom = r < rows-1  ? (tilesData[tileId(r+1, c)] || {}) : {};
+  const left   = c > 0       ? (tilesData[tileId(r, c-1)] || {}) : {};
+  const right  = c < cols-1  ? (tilesData[tileId(r, c+1)] || {}) : {};
   if (top.mergeGroup    === g) div.classList.add('merge-top');
   if (bottom.mergeGroup === g) div.classList.add('merge-bottom');
   if (left.mergeGroup   === g) div.classList.add('merge-left');
   if (right.mergeGroup  === g) div.classList.add('merge-right');
 }
 
-// ---------------- OPEN PANEL ----------------
+function showReadOnlyInfo(id) {
+  const d = tilesData[id] || {};
+  if (!d.title) return;
+  const panel = document.getElementById('defaultInfo');
+  panel.innerHTML = `
+    <h2 style="font-family:'Schoolbell',cursive">${escHtml(d.title)}</h2>
+    ${d.description ? `<p>${escHtml(d.description)}</p>` : ''}
+    ${d.imageUrl ? `<img src="${escHtml(d.imageUrl)}" style="width:100%;border-radius:0.5rem;margin-top:0.5rem;" />` : ''}
+  `;
+  document.getElementById('editInfo').style.display  = 'none';
+  document.getElementById('defaultInfo').style.display = 'block';
+}
+
+// ================================================================
+// OPEN PANEL / TILE CLICK
+// ================================================================
+const editInfo    = document.getElementById('editInfo');
+const defaultInfo = document.getElementById('defaultInfo');
+const titleInput  = document.getElementById('titleInput');
+const descInput   = document.getElementById('descInput');
+const imgInput    = document.getElementById('imgInput');
+const colorInput  = document.getElementById('colorInput');
+const splitBtn    = document.getElementById('splitBtn');
+
 function openPanel(id) {
   activeId = id;
   defaultInfo.style.display = 'none';
   editInfo.style.display    = 'block';
 
-  // Highlight active tile
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
   const { r, c } = tileRC(id);
+  const rows = currentGardenData.rows || 6;
   const tiles = document.querySelectorAll('.tile');
-  if (tiles[r * 12 + c]) tiles[r * 12 + c].classList.add('active');
+  if (tiles[r * (currentGardenData.cols || 6) + c])
+    tiles[r * (currentGardenData.cols || 6) + c].classList.add('active');
 
   const d = tilesData[id] || {};
   titleInput.value  = d.title       || '';
   descInput.value   = d.description || '';
   imgInput.value    = d.imageUrl    || '';
   colorInput.value  = d.color       || '#e8ffd6';
-
-  // Show split button only if this tile is part of a merge group
   splitBtn.style.display = d.mergeGroup ? 'inline-block' : 'none';
 }
 
-// ---------------- TILE CLICK ----------------
 function handleTileClick(id) {
   if (mergeMode) {
     toggleMergeSelection(id);
@@ -154,8 +497,14 @@ function handleTileClick(id) {
   }
 }
 
-// ---------------- SAVE ----------------
-saveBtn.onclick = async () => {
+// ================================================================
+// SAVE / CLEAR / EXIT / SPLIT
+// ================================================================
+function tilesRef() {
+  return db.collection('gardens').doc(currentGardenId).collection('tiles');
+}
+
+document.getElementById('saveBtn').onclick = async () => {
   if (!activeId) return;
   const d = tilesData[activeId] || {};
   const payload = {
@@ -165,78 +514,65 @@ saveBtn.onclick = async () => {
     color:       colorInput.value,
     updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
   };
-
-  // If part of a merge group, save to ALL tiles in the group
   if (d.mergeGroup) {
     const batch = db.batch();
     Object.keys(tilesData).forEach(k => {
-      if (tilesData[k].mergeGroup === d.mergeGroup) {
-        batch.set(gardenRef.doc(k), { ...payload, mergeGroup: d.mergeGroup });
-      }
+      if (tilesData[k].mergeGroup === d.mergeGroup)
+        batch.set(tilesRef().doc(k), { ...payload, mergeGroup: d.mergeGroup });
     });
     await batch.commit();
   } else {
-    await gardenRef.doc(activeId).set(payload);
+    await tilesRef().doc(activeId).set(payload);
   }
+  // Update garden updatedAt
+  db.collection('gardens').doc(currentGardenId).update({ updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
 };
 
-// ---------------- CLEAR ----------------
-clearBtn.onclick = async () => {
+document.getElementById('clearBtn').onclick = async () => {
   if (!activeId) return;
   const d = tilesData[activeId] || {};
-
-  // If part of a merge group, clear ALL tiles in the group
   if (d.mergeGroup) {
     const batch = db.batch();
     Object.keys(tilesData).forEach(k => {
-      if (tilesData[k].mergeGroup === d.mergeGroup) {
-        batch.delete(gardenRef.doc(k));
-      }
+      if (tilesData[k].mergeGroup === d.mergeGroup) batch.delete(tilesRef().doc(k));
     });
     await batch.commit();
   } else {
-    await gardenRef.doc(activeId).delete();
+    await tilesRef().doc(activeId).delete();
   }
-
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
   activeId = null;
   editInfo.style.display  = 'none';
   defaultInfo.style.display = 'block';
 };
 
-// ---------------- EXIT ----------------
-exitBtn.onclick = () => {
+document.getElementById('exitBtn').onclick = () => {
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
   activeId = null;
   editInfo.style.display  = 'none';
   defaultInfo.style.display = 'block';
 };
 
-// ---------------- SPLIT ----------------
-splitBtn.onclick = async () => {
+document.getElementById('splitBtn').onclick = async () => {
   if (!activeId) return;
   const d = tilesData[activeId] || {};
   if (!d.mergeGroup) return;
-
   const batch = db.batch();
   Object.keys(tilesData).forEach(k => {
     if (tilesData[k].mergeGroup === d.mergeGroup) {
-      // Keep title/desc/color but remove mergeGroup
       const { mergeGroup, ...rest } = tilesData[k];
-      batch.set(gardenRef.doc(k), { ...rest, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      batch.set(tilesRef().doc(k), { ...rest, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     }
   });
   await batch.commit();
-
   splitBtn.style.display = 'none';
 };
 
 // ================================================================
-// ---------------- MERGE MODE ------------------------------------
+// MERGE MODE
 // ================================================================
-
 let mergeMode     = false;
-let mergeSelected = new Set(); // Set of tile IDs selected for merging
+let mergeSelected = new Set();
 
 const mergeModeBtn    = document.getElementById('mergeModeBtn');
 const mergeToolbar    = document.getElementById('merge-toolbar');
@@ -255,7 +591,6 @@ function toggleMergeMode(on) {
   mergeModeBtn.textContent = mergeMode ? '✕ Cancel Merge' : '⊞ Merge Tiles';
 
   if (mergeMode) {
-    // Close any open panel
     editInfo.style.display  = 'none';
     defaultInfo.style.display = 'block';
     document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
@@ -265,52 +600,39 @@ function toggleMergeMode(on) {
     applyMergeModeUI();
   } else {
     mergeToolbar.classList.remove('visible');
-    // Clear all merge-mode classes
-    document.querySelectorAll('.tile').forEach(t => {
-      t.classList.remove('merge-selected', 'merge-eligible', 'merge-ineligible');
-    });
+    document.querySelectorAll('.tile').forEach(t =>
+      t.classList.remove('merge-selected', 'merge-eligible', 'merge-ineligible'));
   }
 }
 
-// Determines which tiles are eligible to be added to the current selection.
-// A tile is eligible if it shares at least one edge with an already-selected tile
-// AND is not already part of a DIFFERENT merge group from any selected tile.
 function getEligibleIds() {
-  // Figure out if the selection is locked to a merge group
+  const rows = currentGardenData.rows || 6;
+  const cols = currentGardenData.cols || 6;
   let lockedGroup = null;
   mergeSelected.forEach(id => {
     const g = (tilesData[id] || {}).mergeGroup;
     if (g) lockedGroup = g;
   });
-
   const eligible = new Set();
-
   if (mergeSelected.size === 0) {
-    // All tiles are eligible to start
-    for (let r = 0; r < 12; r++)
-      for (let c = 0; c < 12; c++)
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++)
         eligible.add(tileId(r, c));
   } else {
-    // Expand from selected tiles — flood-fill neighbours
     mergeSelected.forEach(id => {
       const { r, c } = tileRC(id);
       const neighbours = [];
-      if (r > 0)  neighbours.push(tileId(r-1, c));
-      if (r < 11) neighbours.push(tileId(r+1, c));
-      if (c > 0)  neighbours.push(tileId(r, c-1));
-      if (c < 11) neighbours.push(tileId(r, c+1));
-      neighbours.forEach(n => {
-        if (!mergeSelected.has(n)) eligible.add(n);
-      });
+      if (r > 0)       neighbours.push(tileId(r-1, c));
+      if (r < rows-1)  neighbours.push(tileId(r+1, c));
+      if (c > 0)       neighbours.push(tileId(r, c-1));
+      if (c < cols-1)  neighbours.push(tileId(r, c+1));
+      neighbours.forEach(n => { if (!mergeSelected.has(n)) eligible.add(n); });
     });
-
-    // Remove tiles that belong to a DIFFERENT merge group
     eligible.forEach(id => {
       const g = (tilesData[id] || {}).mergeGroup;
       if (g && lockedGroup && g !== lockedGroup) eligible.delete(id);
     });
   }
-
   return eligible;
 }
 
@@ -319,54 +641,41 @@ function applyMergeModeUI() {
   document.querySelectorAll('.tile').forEach(div => {
     const id = div.dataset.id;
     div.classList.remove('merge-selected', 'merge-eligible', 'merge-ineligible');
-    if (mergeSelected.has(id)) {
-      div.classList.add('merge-selected');
-    } else if (eligible.has(id)) {
-      div.classList.add('merge-eligible');
-    } else {
-      div.classList.add('merge-ineligible');
-    }
+    if (mergeSelected.has(id))      div.classList.add('merge-selected');
+    else if (eligible.has(id))      div.classList.add('merge-eligible');
+    else                            div.classList.add('merge-ineligible');
   });
 }
 
 function toggleMergeSelection(id) {
   if (mergeSelected.has(id)) {
-    // Deselect — but only if removing it doesn't disconnect the remaining group
     mergeSelected.delete(id);
-    if (mergeSelected.size > 0 && !isConnected(mergeSelected)) {
-      // Reconnect — put it back
-      mergeSelected.add(id);
-    }
+    if (mergeSelected.size > 0 && !isConnected(mergeSelected)) mergeSelected.add(id);
   } else {
     const eligible = getEligibleIds();
-    if (!eligible.has(id)) return; // not allowed
+    if (!eligible.has(id)) return;
     mergeSelected.add(id);
   }
   applyMergeModeUI();
   updateMergeToolbar();
 }
 
-// BFS connectivity check — ensures all selected tiles form one connected group
 function isConnected(ids) {
   if (ids.size <= 1) return true;
   const arr = [...ids];
   const visited = new Set();
-  const queue = [arr[0]];
-  visited.add(arr[0]);
+  const rows = currentGardenData.rows || 6;
+  const cols = currentGardenData.cols || 6;
+  const queue = [arr[0]]; visited.add(arr[0]);
   while (queue.length) {
     const cur = queue.shift();
     const { r, c } = tileRC(cur);
     const neighbours = [];
-    if (r > 0)  neighbours.push(tileId(r-1, c));
-    if (r < 11) neighbours.push(tileId(r+1, c));
-    if (c > 0)  neighbours.push(tileId(r, c-1));
-    if (c < 11) neighbours.push(tileId(r, c+1));
-    neighbours.forEach(n => {
-      if (ids.has(n) && !visited.has(n)) {
-        visited.add(n);
-        queue.push(n);
-      }
-    });
+    if (r > 0)       neighbours.push(tileId(r-1, c));
+    if (r < rows-1)  neighbours.push(tileId(r+1, c));
+    if (c > 0)       neighbours.push(tileId(r, c-1));
+    if (c < cols-1)  neighbours.push(tileId(r, c+1));
+    neighbours.forEach(n => { if (ids.has(n) && !visited.has(n)) { visited.add(n); queue.push(n); } });
   }
   return visited.size === ids.size;
 }
@@ -379,29 +688,23 @@ function updateMergeToolbar() {
   mergeConfirmBtn.disabled = n < 2;
 }
 
-// ---------------- CONFIRM MERGE ----------------
 mergeConfirmBtn.onclick = async () => {
   if (mergeSelected.size < 2) return;
-
-  // Check if any selected tile already has a mergeGroup — reuse it, else create new
   let group = null;
   mergeSelected.forEach(id => {
     const g = (tilesData[id] || {}).mergeGroup;
     if (g) group = g;
   });
   if (!group) group = crypto.randomUUID();
-
-  // Use the data from the "leader" tile (top-left-most selected)
   const sortedIds = [...mergeSelected].sort((a, b) => {
     const ra = tileRC(a), rb = tileRC(b);
     return ra.r !== rb.r ? ra.r - rb.r : ra.c - rb.c;
   });
   const leaderData = tilesData[sortedIds[0]] || {};
-
   const batch = db.batch();
   mergeSelected.forEach(id => {
     const existing = tilesData[id] || {};
-    batch.set(gardenRef.doc(id), {
+    batch.set(tilesRef().doc(id), {
       title:       leaderData.title       || existing.title       || '',
       description: leaderData.description || existing.description || '',
       imageUrl:    leaderData.imageUrl    || existing.imageUrl    || '',
@@ -411,17 +714,15 @@ mergeConfirmBtn.onclick = async () => {
     });
   });
   await batch.commit();
-
   toggleMergeMode(false);
 };
 
-// ---------------- CANCEL MERGE ----------------
 mergeCancelBtn.onclick = () => toggleMergeMode(false);
 
 // ================================================================
-// ---------------- MOBILE MODAL BRIDGE --------------------------
+// MOBILE MODAL BRIDGE
 // ================================================================
-(function(){
+(function () {
   const overlay     = document.getElementById('modal-overlay');
   const mTitle      = document.getElementById('modal-plotTitle');
   const mTitleInput = document.getElementById('modal-titleInput');
@@ -441,7 +742,7 @@ mergeCancelBtn.onclick = () => toggleMergeMode(false);
   }
 
   const _origOpen = openPanel;
-  window.openPanel = function(id) {
+  window.openPanel = function (id) {
     _origOpen(id);
     if (!isMobile()) return;
 
@@ -451,40 +752,36 @@ mergeCancelBtn.onclick = () => toggleMergeMode(false);
     mDesc.value        = d.description || '';
     mImg.value         = d.imageUrl    || '';
     mColor.value       = d.color       || '#e8ffd6';
-
     if (mSplitBtn) mSplitBtn.style.display = d.mergeGroup ? 'inline-block' : 'none';
-
     overlay.classList.add('open');
     document.body.classList.add('modal-open');
   };
 
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) closeModal();
-  });
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
 
-  document.getElementById('modal-saveBtn').onclick = async function() {
+  document.getElementById('modal-saveBtn').onclick = async function () {
     if (!activeId) return;
     titleInput.value = mTitleInput.value;
     descInput.value  = mDesc.value;
     imgInput.value   = mImg.value;
     colorInput.value = mColor.value;
-    saveBtn.click();
+    document.getElementById('saveBtn').click();
     closeModal();
   };
 
-  document.getElementById('modal-clearBtn').onclick = function() {
-    clearBtn.click();
+  document.getElementById('modal-clearBtn').onclick = function () {
+    document.getElementById('clearBtn').click();
     closeModal();
   };
 
-  document.getElementById('modal-exitBtn').onclick = function() {
-    exitBtn.click();
+  document.getElementById('modal-exitBtn').onclick = function () {
+    document.getElementById('exitBtn').click();
     closeModal();
   };
 
   if (mSplitBtn) {
-    mSplitBtn.onclick = function() {
-      splitBtn.click();
+    mSplitBtn.onclick = function () {
+      document.getElementById('splitBtn').click();
       closeModal();
     };
   }
