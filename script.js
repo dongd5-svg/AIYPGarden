@@ -139,27 +139,35 @@ function buildGardenCard(gardenId, data, isOwn) {
 
   const rows = data.rows || 6;
   const cols = data.cols || 6;
+  const previewRows = Math.min(rows, 12);
+  const previewCols = Math.min(cols, 12);
 
   // Mini grid preview
   const preview = document.createElement('div');
   preview.className = 'garden-card-preview';
-  preview.style.gridTemplateColumns = `repeat(${Math.min(cols, 12)}, 1fr)`;
-  preview.style.gridTemplateRows    = `repeat(${Math.min(rows, 12)}, 1fr)`;
-  const previewCount = Math.min(rows, 12) * Math.min(cols, 12);
-  for (let i = 0; i < previewCount; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'mini-tile';
-    // Color a few cells from tile data if available
-    preview.appendChild(cell);
+  preview.style.gridTemplateColumns = `repeat(${previewCols}, 1fr)`;
+  preview.style.gridTemplateRows    = `repeat(${previewRows}, 1fr)`;
+
+  // Build a map of cells by tileId for quick lookup
+  const cellMap = {};
+  for (let r = 0; r < previewRows; r++) {
+    for (let c = 0; c < previewCols; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'mini-tile';
+      cellMap[`r${r}c${c}`] = cell;
+      preview.appendChild(cell);
+    }
   }
 
-  // Populate mini preview colors if we have snapshot data
-  if (data.previewColors) {
-    const cells = preview.querySelectorAll('.mini-tile');
-    data.previewColors.forEach((color, i) => {
-      if (cells[i]) cells[i].style.background = color;
+  // Fetch real tile colors from Firestore
+  db.collection('gardens').doc(gardenId).collection('tiles').get().then(snap => {
+    snap.forEach(doc => {
+      const cell = cellMap[doc.id];
+      if (cell && doc.data().color) {
+        cell.style.background = doc.data().color;
+      }
     });
-  }
+  });
 
   const badge = data.visibility === 'public'
     ? '<span class="garden-card-badge badge-public">🌍 Public</span>'
@@ -737,7 +745,6 @@ mergeCancelBtn.onclick = () => toggleMergeMode(false);
     overlay.classList.add('closing');
     setTimeout(() => {
       overlay.classList.remove('open', 'closing');
-      document.body.classList.remove('modal-open');
     }, 180);
   }
 
@@ -754,7 +761,6 @@ mergeCancelBtn.onclick = () => toggleMergeMode(false);
     mColor.value       = d.color       || '#e8ffd6';
     if (mSplitBtn) mSplitBtn.style.display = d.mergeGroup ? 'inline-block' : 'none';
     overlay.classList.add('open');
-    document.body.classList.add('modal-open');
   };
 
   overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });

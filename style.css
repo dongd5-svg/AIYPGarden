@@ -709,7 +709,6 @@ body.merge-mode .tile.merge-selected {
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    transition: transform 0.18s ease-out;
   }
 
   /* Garden grid: square, fills screen width */
@@ -717,16 +716,6 @@ body.merge-mode .tile.merge-selected {
     width: 96vw !important;
     height: 96vw !important;
     font-size: clamp(7px, 2vw, 13px);
-  }
-
-  /* Shrink when tile modal is open */
-  body.modal-open .garden-col {
-    transform: translateY(-32vh);
-  }
-  body.modal-open #garden-container {
-    width: min(88vw, 36vh) !important;
-    height: min(88vw, 36vh) !important;
-    font-size: clamp(5px, 1.5vw, 10px);
   }
 
   .panel-col { display: none; }
