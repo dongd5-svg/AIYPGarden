@@ -15,8 +15,15 @@ function initCommunity() {
   setCommTab('feed');
   loadFeed();
   loadDiscover();
-  // Set compose avatars
   setComposeAvatar('composeAvatar2');
+
+  // Wire compose modal close (safe to do here since DOM is ready)
+  const closeBtn = document.getElementById('compose-modal-close');
+  const overlay  = document.getElementById('compose-modal-overlay');
+  if (closeBtn) closeBtn.onclick = () => overlay.classList.remove('open');
+  if (overlay)  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
 }
 
 function setComposeAvatar(id) {
@@ -57,22 +64,21 @@ function setCommTab(tab) {
 
 // ── Compose modal ─────────────────────────────────────────────────
 function openComposeModal() {
+  const overlay = document.getElementById('compose-modal-overlay');
+  const input   = document.getElementById('postTextInput2');
+  if (!overlay) { console.error('Compose modal not found'); return; }
   // Reset fields
-  document.getElementById('postTextInput2').value = '';
+  if (input) input.value = '';
   clearPostImage(2);
   pendingTaggedGardens2 = [];
   renderComposeTags(2);
-  document.getElementById('postTypeSelect2').value = 'general';
-  document.getElementById('compose-modal-overlay').classList.add('open');
-  setTimeout(() => document.getElementById('postTextInput2').focus(), 200);
+  const typeSelect = document.getElementById('postTypeSelect2');
+  if (typeSelect) typeSelect.value = 'general';
+  overlay.classList.add('open');
+  setTimeout(() => { if (input) input.focus(); }, 200);
 }
 
-document.getElementById('compose-modal-close').onclick = () =>
-  document.getElementById('compose-modal-overlay').classList.remove('open');
-document.getElementById('compose-modal-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('compose-modal-overlay'))
-    document.getElementById('compose-modal-overlay').classList.remove('open');
-});
+// compose modal close wired in initCommunity()
 
 // ── Feed tab buttons ──────────────────────────────────────────────
 document.querySelectorAll('.feed-tab-btn').forEach(btn => {
