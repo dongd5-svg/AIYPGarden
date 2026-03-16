@@ -320,21 +320,26 @@ function buildCommentEl(doc, postId, postAuthorId, isReply) {
     // Real-time listener handles the update automatically
   };
 
-  // Reply button
+  // Reply button — use item.querySelector, NOT document.getElementById
+  // because item hasn't been appended to the DOM yet at this point
   const replyBtn = item.querySelector('.comment-reply-btn');
   if (replyBtn) {
+    const replyRow   = item.querySelector('.reply-input-row');
+    const replyInput = replyRow ? replyRow.querySelector('input') : null;
+
     replyBtn.onclick = () => {
-      const row = document.getElementById(`reply-${doc.id}`);
-      row.style.display = row.style.display === 'none' ? 'flex' : 'none';
-      if (row.style.display !== 'none') row.querySelector('input').focus();
+      if (!replyRow) return;
+      replyRow.style.display = replyRow.style.display === 'none' ? 'flex' : 'none';
+      if (replyRow.style.display !== 'none' && replyInput) replyInput.focus();
     };
-    const replyRow = document.getElementById(`reply-${doc.id}`);
-    const replyInput = replyRow.querySelector('input');
-    replyRow.querySelector('button').onclick = () =>
-      submitPostComment(postId, postAuthorId, doc.id, replyInput);
-    replyInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') submitPostComment(postId, postAuthorId, doc.id, replyInput);
-    });
+
+    if (replyRow && replyInput) {
+      replyRow.querySelector('button').onclick = () =>
+        submitPostComment(postId, postAuthorId, doc.id, replyInput);
+      replyInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') submitPostComment(postId, postAuthorId, doc.id, replyInput);
+      });
+    }
   }
 
   // Delete comment

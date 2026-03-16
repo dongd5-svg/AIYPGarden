@@ -135,10 +135,16 @@ async function renderUserProfile(uid, container, isOwn) {
   const followerCount  = (user.followers || []).length;
   const followingCount = (user.following || []).length;
 
-  // Posts
-  const postsSnap = await db.collection('posts')
-    .where('authorId', '==', uid)
-    .orderBy('createdAt', 'desc').limit(20).get();
+  // Posts — try ordered query, fall back to unordered if index not ready
+  let postsSnap;
+  try {
+    postsSnap = await db.collection('posts')
+      .where('authorId', '==', uid)
+      .orderBy('createdAt', 'desc').limit(20).get();
+  } catch {
+    postsSnap = await db.collection('posts')
+      .where('authorId', '==', uid).limit(20).get();
+  }
 
   // Public gardens
   const gardensSnap = await db.collection('gardens')
