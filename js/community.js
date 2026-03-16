@@ -16,7 +16,6 @@ function initCommunity() {
   loadFeed();
   loadDiscover();
   // Set compose avatars
-  setComposeAvatar('composeAvatar');
   setComposeAvatar('composeAvatar2');
 }
 
@@ -409,45 +408,28 @@ async function submitPostComment(postId, postAuthorId, parentId, inputEl) {
 }
 
 // ── Compose (Feed tab) ────────────────────────────────────────────
-document.getElementById('addImgBtn').onclick  = () => pickPostImage(1);
-document.getElementById('removeImgBtn').onclick = () => clearPostImage(1);
-document.getElementById('submitPostBtn').onclick = () => submitPost(1);
-document.getElementById('tagGardenBtn').onclick  = () => openTagPicker(1);
-
-document.getElementById('addImgBtn2').onclick   = () => pickPostImage(2);
-document.getElementById('removeImgBtn2').onclick = () => clearPostImage(2);
+// Only compose 2 (post tab) is used — feed compose was removed
+document.getElementById('addImgBtn2').onclick    = () => pickPostImage(2);
+document.getElementById('removeImgBtn2').onclick  = () => clearPostImage(2);
 document.getElementById('submitPostBtn2').onclick = () => submitPost(2);
 document.getElementById('tagGardenBtn2').onclick  = () => openTagPicker(2);
 
 function pickPostImage(n) {
-  // For now show a URL prompt since storage isn't enabled
   const url = prompt('Paste an image URL:');
   if (!url) return;
-  if (n === 1) {
-    pendingImageUrl = url;
-    document.getElementById('composeImgThumb').src = url;
-    document.getElementById('composeImgPreview').style.display = 'flex';
-  } else {
-    pendingImageUrl2 = url;
-    document.getElementById('composeImgThumb2').src = url;
-    document.getElementById('composeImgPreview2').style.display = 'flex';
-  }
+  pendingImageUrl2 = url;
+  document.getElementById('composeImgThumb2').src = url;
+  document.getElementById('composeImgPreview2').style.display = 'flex';
 }
 
 function clearPostImage(n) {
-  if (n === 1) {
-    pendingImageUrl = '';
-    document.getElementById('composeImgThumb').src = '';
-    document.getElementById('composeImgPreview').style.display = 'none';
-  } else {
-    pendingImageUrl2 = '';
-    document.getElementById('composeImgThumb2').src = '';
-    document.getElementById('composeImgPreview2').style.display = 'none';
-  }
+  pendingImageUrl2 = '';
+  document.getElementById('composeImgThumb2').src = '';
+  document.getElementById('composeImgPreview2').style.display = 'none';
 }
 
 function openTagPicker(n) {
-  activeFeedCompose = n;
+  activeFeedCompose = 2; // always use compose 2
   const list = document.getElementById('tag-picker-list');
   list.innerHTML = '<p style="color:#888;font-size:0.9rem">Loading…</p>';
   document.getElementById('tag-picker-overlay').classList.add('open');
@@ -483,8 +465,8 @@ function openTagPicker(n) {
 }
 
 function renderComposeTags(n) {
-  const container = document.getElementById(n === 1 ? 'composeTags' : 'composeTags2');
-  const tagged    = n === 1 ? pendingTaggedGardens : pendingTaggedGardens2;
+  const container = document.getElementById('composeTags2');
+  const tagged    = pendingTaggedGardens2;
   container.innerHTML = '';
   tagged.forEach(g => {
     const chip = document.createElement('span');
@@ -507,12 +489,10 @@ document.getElementById('tag-picker-overlay').addEventListener('click', e => {
 });
 
 async function submitPost(n) {
-  const inputId = n === 1 ? 'postTextInput'   : 'postTextInput2';
-  const typeId  = n === 1 ? 'postTypeSelect'  : 'postTypeSelect2';
-  const text    = document.getElementById(inputId).value.trim();
-  const imgUrl  = n === 1 ? pendingImageUrl   : pendingImageUrl2;
-  const tagged  = n === 1 ? pendingTaggedGardens : pendingTaggedGardens2;
-  const postType = document.getElementById(typeId).value;
+  const text     = document.getElementById('postTextInput2').value.trim();
+  const imgUrl   = pendingImageUrl2;
+  const tagged   = pendingTaggedGardens2;
+  const postType = document.getElementById('postTypeSelect2').value;
 
   if (!text && !imgUrl) return;
 
@@ -529,15 +509,12 @@ async function submitPost(n) {
       createdAt:   firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    document.getElementById(inputId).value = '';
-    clearPostImage(n);
-    if (n === 1) pendingTaggedGardens  = [];
-    else         pendingTaggedGardens2 = [];
-    renderComposeTags(n);
+    document.getElementById('postTextInput2').value = '';
+    clearPostImage(2);
+    pendingTaggedGardens2 = [];
+    renderComposeTags(2);
     showToast('Posted! 🌱');
-
-    // Switch to feed to see the post
-    if (n === 2) setCommTab('feed');
+    setCommTab('feed');
   } finally {
     btn.disabled = false;
   }

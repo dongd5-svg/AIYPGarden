@@ -152,16 +152,16 @@ function openConversation(convId, otherId, otherName, otherPhoto) {
         return ta - tb;
       });
 
-      // Mark last incoming message as seen
-      if (sortedDocs.length > 0) {
-        const lastDoc = sortedDocs[sortedDocs.length - 1];
-        if (lastDoc.data().senderId !== currentUser.uid) {
+      // Mark all unread incoming messages as seen
+      sortedDocs.forEach(doc => {
+        const d = doc.data();
+        if (d.senderId !== currentUser.uid && !(d.seenBy||[]).includes(currentUser.uid)) {
           db.collection('conversations').doc(convId)
-            .collection('messages').doc(lastDoc.id)
+            .collection('messages').doc(doc.id)
             .update({ seenBy: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) })
             .catch(() => {});
         }
-      }
+      });
 
       sortedDocs.forEach((doc, i) => {
         const m      = doc.data();
@@ -209,10 +209,13 @@ function openConversation(convId, otherId, otherName, otherPhoto) {
         wrap.appendChild(reactBtn);
 
         // Time + read receipt
+        // Find last message sent by ME to show seen on
+        const lastMine = [...sortedDocs].reverse().find(d => d.data().senderId === currentUser.uid);
+        const isLastMine = lastMine && doc.id === lastMine.id;
         const meta = document.createElement('div');
         meta.className = 'dm-msg-meta';
         const timeStr = m.createdAt?.toDate ? timeAgo(m.createdAt.toDate()) : '';
-        const seenStr = (mine && isLast && (m.seenBy||[]).includes(otherId)) ? ' · Seen ✓' : '';
+        const seenStr = (mine && isLastMine && (m.seenBy||[]).includes(otherId)) ? ' · Seen ✓' : '';
         meta.textContent = timeStr + seenStr;
         wrap.appendChild(meta);
 
