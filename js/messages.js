@@ -81,14 +81,16 @@ function openConversation(convId, otherId, otherName, otherPhoto) {
     unreadBy: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
   }).catch(() => {});
 
-  // Rebuild main pane
-  const main = document.getElementById('dmMain');
-  main.innerHTML = `
+  const isMobile = window.innerWidth <= 900;
+  const avatarHtml = otherPhoto
+    ? `<img src="${escHtml(otherPhoto)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`
+    : escHtml((otherName||'?')[0].toUpperCase());
+
+  const chatHtml = `
     <div class="dm-chat-header">
-      <div class="dm-conv-avatar" style="width:36px;height:36px;font-size:0.9rem;border-radius:50%;overflow:hidden;background:var(--header);color:white;display:flex;align-items:center;justify-content:center">
-        ${otherPhoto
-          ? `<img src="${escHtml(otherPhoto)}" style="width:100%;height:100%;object-fit:cover"/>`
-          : escHtml((otherName||'?')[0].toUpperCase())}
+      ${isMobile ? `<button class="dm-back-btn" id="dmBackBtn">← Back</button>` : ''}
+      <div class="dm-conv-avatar" style="width:36px;height:36px;font-size:0.9rem;border-radius:50%;overflow:hidden;background:var(--header);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        ${avatarHtml}
       </div>
       <span class="dm-chat-header-name">${escHtml(otherName)}</span>
     </div>
@@ -99,6 +101,31 @@ function openConversation(convId, otherId, otherName, otherPhoto) {
       <button class="dm-send-btn" id="dmSendBtn">➤</button>
     </div>
   `;
+
+  if (isMobile) {
+    // On mobile: show full-screen chat, hide the sidebar
+    const dmLayout = document.querySelector('.dm-layout');
+    const sidebar  = document.querySelector('.dm-sidebar');
+    const main     = document.getElementById('dmMain');
+    if (sidebar) sidebar.style.display = 'none';
+    main.innerHTML = chatHtml;
+    main.style.display = 'flex';
+    main.style.flexDirection = 'column';
+    main.style.height = '100%';
+    // Back button returns to conversation list
+    document.getElementById('dmBackBtn').onclick = () => {
+      if (msgsUnsubscribe) { msgsUnsubscribe(); msgsUnsubscribe = null; }
+      sidebar.style.display = 'flex';
+      sidebar.style.flexDirection = 'column';
+      main.innerHTML = '';
+      main.style.display = '';
+      activeConvId = null;
+    };
+  } else {
+    // Desktop: show chat in right pane as normal
+    const main = document.getElementById('dmMain');
+    main.innerHTML = chatHtml;
+  }
 
   document.getElementById('dmSendBtn').onclick = () => sendDm(convId, otherId);
   document.getElementById('dmInput').addEventListener('keydown', e => {
@@ -113,15 +140,21 @@ function openConversation(convId, otherId, otherName, otherPhoto) {
   if (msgsUnsubscribe) msgsUnsubscribe();
   msgsUnsubscribe = db.collection('conversations').doc(convId)
     .collection('messages')
-    .orderBy('createdAt', 'asc')
-    .onSnapshot(snap => {
+    .onSnapshot(rawSnap => {
       const container = document.getElementById('dmMessages');
       if (!container) return;
       container.innerHTML = '';
 
+      // Sort client-side — avoids needing a composite index
+      const sortedDocs = rawSnap.docs.slice().sort((a, b) => {
+        const ta = a.data().createdAt?.toMillis?.() || 0;
+        const tb = b.data().createdAt?.toMillis?.() || 0;
+        return ta - tb;
+      });
+
       // Mark last incoming message as seen
-      if (snap.size > 0) {
-        const lastDoc = snap.docs[snap.size - 1];
+      if (sortedDocs.length > 0) {
+        const lastDoc = sortedDocs[sortedDocs.length - 1];
         if (lastDoc.data().senderId !== currentUser.uid) {
           db.collection('conversations').doc(convId)
             .collection('messages').doc(lastDoc.id)
@@ -130,10 +163,10 @@ function openConversation(convId, otherId, otherName, otherPhoto) {
         }
       }
 
-      snap.forEach((doc, i) => {
+      sortedDocs.forEach((doc, i) => {
         const m      = doc.data();
         const mine   = m.senderId === currentUser.uid;
-        const isLast = i === snap.size - 1;
+        const isLast = i === sortedDocs.length - 1;
 
         const wrap = document.createElement('div');
         wrap.className = `dm-msg ${mine ? 'mine' : 'theirs'}`;

@@ -129,7 +129,7 @@ function handleNotifClick(n) {
       break;
     case 'dm':
       navigateTo('community');
-      switchCommTab('dms');
+      setCommTab('dms');
       if (n.fromUid) openDmWithUser(n.fromUid, n.fromName, n.fromPhoto || '');
       break;
   }

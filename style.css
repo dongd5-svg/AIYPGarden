@@ -347,7 +347,7 @@ html, body { height: 100%; max-height: 100%; margin: 0; font-family: 'Schoolbell
 #user-profile-view { max-width: 680px; margin: 0 auto; padding: 1rem; }
 
 /* ===== DMs ===== */
-.dm-layout { display: flex; height: calc(100vh - 120px); gap: 0; }
+.dm-layout { display: flex; height: calc(100vh - 180px); gap: 0; min-height: 0; }
 .dm-sidebar { width: 280px; border-right: 1px solid rgba(47,79,47,0.1); overflow-y: auto; flex-shrink: 0; }
 .dm-sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem; border-bottom: 1px solid rgba(47,79,47,0.1); }
 .dm-sidebar-header h3 { margin: 0; font-size: 1rem; }
@@ -572,9 +572,10 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 0.3rem solid #e67e00 
   .garden-card h3 { font-size: 1rem; }
 
   .comm-tab-content { padding: 1rem; }
-  .dm-layout { flex-direction: column; height: auto; }
-  .dm-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(47,79,47,0.1); max-height: 200px; }
-  .dm-main { min-height: 400px; }
+  .dm-layout { flex-direction: column; height: calc(100vh - 120px); }
+  .dm-sidebar { width: 100%; border-right: none; border-bottom: none; flex: 1; overflow-y: auto; flex-direction: column; display: flex; }
+  .dm-main { flex: 1; min-height: 0; display: none; flex-direction: column; }
+  .dm-back-btn { background: none; border: none; color: var(--header); cursor: pointer; font-family: inherit; font-size: 0.9rem; padding: 0 0.5rem 0 0; white-space: nowrap; }
 
   #create-modal-overlay, #settings-modal-overlay, #tag-picker-overlay,
   #task-modal-overlay, #journal-modal-overlay, #tracking-modal-overlay,
