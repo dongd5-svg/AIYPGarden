@@ -79,34 +79,48 @@ let myGardensUnsubscribe = null;
 
 function loadMyGardens() {
   if (myGardensUnsubscribe) myGardensUnsubscribe();
-  const query = db.collection('gardens')
-    .where('ownerId', '==', currentUser.uid)
-    .orderBy('createdAt', 'desc');
 
-  const renderCards = (snapshot) => {
-    // Also fetch gardens where user is a collaborator
+  const mergeAndRender = (ownedSnap, collabSnap) => {
+    myGrid.innerHTML = '';
+    const allDocs = [];
+    ownedSnap.forEach(doc => allDocs.push({ doc, isOwn: true }));
+    if (collabSnap) {
+      collabSnap.forEach(doc => {
+        if (!allDocs.find(d => d.doc.id === doc.id))
+          allDocs.push({ doc, isOwn: false });
+      });
+    }
+    if (allDocs.length === 0) {
+      emptyState.style.display = 'block';
+      return;
+    }
+    emptyState.style.display = 'none';
+    allDocs.forEach(({ doc, isOwn }) =>
+      myGrid.appendChild(buildGardenCard(doc.id, doc.data(), isOwn)));
+  };
+
+  const renderAll = (ownedSnap) => {
     db.collection('gardens')
       .where('collaboratorEmails', 'array-contains', currentUser.email)
       .get()
-      .then(collabSnap => {
-        myGrid.innerHTML = '';
-        const allDocs = [];
-        snapshot.forEach(doc => allDocs.push({ doc, isOwn: true }));
-        collabSnap.forEach(doc => {
-          if (!allDocs.find(d => d.doc.id === doc.id))
-            allDocs.push({ doc, isOwn: false });
-        });
-        if (allDocs.length === 0) { emptyState.style.display = 'block'; return; }
-        emptyState.style.display = 'none';
-        allDocs.forEach(({ doc, isOwn }) =>
-          myGrid.appendChild(buildGardenCard(doc.id, doc.data(), isOwn)));
-      });
+      .then(collabSnap => mergeAndRender(ownedSnap, collabSnap))
+      .catch(() => mergeAndRender(ownedSnap, null));
   };
 
-  myGardensUnsubscribe = query.onSnapshot(renderCards, () => {
-    db.collection('gardens').where('ownerId', '==', currentUser.uid).get()
-      .then(snap => renderCards(snap));
-  });
+  // Try ordered query; fall back to unordered if index not ready
+  myGardensUnsubscribe = db.collection('gardens')
+    .where('ownerId', '==', currentUser.uid)
+    .orderBy('createdAt', 'desc')
+    .onSnapshot(
+      snap => renderAll(snap),
+      () => {
+        db.collection('gardens')
+          .where('ownerId', '==', currentUser.uid)
+          .get()
+          .then(snap => renderAll(snap))
+          .catch(err => console.error('loadMyGardens failed:', err));
+      }
+    );
 }
 
 // ================================================================
