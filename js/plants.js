@@ -167,6 +167,9 @@ async function showPlantInfo(plantName) {
   const data = await lookupPlant(plantName);
   if (!data) { plantInfoCard.style.display = 'none'; return; }
 
+  // Build a useful description from available data
+  const autoDesc = buildPlantDescription(data);
+
   plantInfoCard.style.display = 'block';
   plantInfoCard.innerHTML = `
     <div class="plant-info-header">
@@ -179,7 +182,6 @@ async function showPlantInfo(plantName) {
       ${data.days ? `<div class="plant-info-item"><span>📅</span>${data.days} days to harvest</div>` : ''}
       ${data.spacing ? `<div class="plant-info-item"><span>📏</span>${escHtml(data.spacing)} spacing</div>` : ''}
     </div>
-    ${data.description ? `<p class="plant-info-desc">${escHtml(data.description.slice(0,150))}${data.description.length>150?'…':''}</p>` : ''}
     ${data.companions && data.companions.length ? `
       <div class="plant-companions">
         <span class="companion-good">✓ Good with: ${data.companions.slice(0,4).map(escHtml).join(', ')}</span>
@@ -188,13 +190,48 @@ async function showPlantInfo(plantName) {
       <div class="plant-companions">
         <span class="companion-bad">✗ Avoid: ${data.avoid.slice(0,4).map(escHtml).join(', ')}</span>
       </div>` : ''}
+    <button class="plant-autofill-btn" id="plantAutofillBtn">
+      ✨ Autofill description
+    </button>
   `;
 
-  // Also auto-fill description if empty
+  // Autofill button — always available, fills or replaces description
+  document.getElementById('plantAutofillBtn').onclick = () => {
+    const descInput = document.getElementById('descInput');
+    descInput.value = autoDesc;
+    descInput.style.borderColor = 'var(--green-mid)';
+    descInput.style.borderStyle = 'solid';
+    setTimeout(() => {
+      descInput.style.borderColor = '';
+      descInput.style.borderStyle = '';
+    }, 1500);
+    showToast('Description filled from plant database! 🌱');
+  };
+
+  // Auto-fill description if currently empty
   const descInput = document.getElementById('descInput');
-  if (!descInput.value && data.description) {
-    descInput.value = data.description.slice(0, 200);
+  if (!descInput.value && autoDesc) {
+    descInput.value = autoDesc;
   }
+}
+
+// Build a structured description from plant data
+function buildPlantDescription(data) {
+  const parts = [];
+  if (data.description) parts.push(data.description.slice(0, 200));
+  const details = [];
+  if (data.sun)     details.push(`☀️ ${data.sun}`);
+  if (data.water)   details.push(`💧 ${data.water} watering`);
+  if (data.days)    details.push(`📅 ~${data.days} days to harvest`);
+  if (data.spacing) details.push(`📏 Space ${data.spacing} apart`);
+  if (details.length) parts.push(details.join(' · '));
+  if (data.season && data.season.length)
+    parts.push(`🗓 Best season: ${data.season.join(', ')}`);
+  if (data.companions && data.companions.length)
+    parts.push(`✓ Companion plants: ${data.companions.slice(0,4).join(', ')}`);
+  if (data.avoid && data.avoid.length)
+    parts.push(`✗ Keep away from: ${data.avoid.slice(0,4).join(', ')}`);
+  return parts.join('\n');
 }
 
 // ── Companion planting check ──────────────────────────────────────

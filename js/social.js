@@ -94,7 +94,9 @@ function buildUserSearchItem(uid, data) {
 
 // ── Own profile ───────────────────────────────────────────────────
 function renderOwnProfile() {
-  renderUserProfile(currentUser.uid, document.getElementById('profile-view'), true);
+  const container = document.getElementById('profile-view');
+  container.innerHTML = '<p style="padding:2rem;text-align:center;color:#888">Loading profile…</p>';
+  renderUserProfile(currentUser.uid, container, true);
 }
 
 // ── Open any user profile ─────────────────────────────────────────

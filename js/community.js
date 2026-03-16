@@ -48,6 +48,9 @@ function setCommTab(tab) {
   if (tab === 'search')  initSearch();
   if (tab === 'profile') renderOwnProfile();
   if (tab === 'dms')     initDms();
+  // scroll content back to top on tab switch
+  const content = document.getElementById('comm-content');
+  if (content) content.scrollTop = 0;
 }
 
 // ── Feed tab buttons ──────────────────────────────────────────────
@@ -63,6 +66,9 @@ document.querySelectorAll('.feed-tab-btn').forEach(btn => {
 // ── Load feed ─────────────────────────────────────────────────────
 function loadFeed() {
   if (feedUnsubscribe) { feedUnsubscribe(); feedUnsubscribe = null; }
+  // Clean up any open comment listeners
+  Object.values(commentListeners).forEach(unsub => unsub());
+  Object.keys(commentListeners).forEach(k => delete commentListeners[k]);
   const feedEl  = document.getElementById('community-feed');
   const emptyEl = document.getElementById('feed-empty');
   feedEl.innerHTML = '';
@@ -199,44 +205,69 @@ function buildPostCard(post) {
 }
 
 // ── Post comments (nested) ────────────────────────────────────────
-async function loadPostComments(postId, postAuthorId) {
+// Track active comment listeners so we can clean them up
+const commentListeners = {};
+
+function loadPostComments(postId, postAuthorId) {
   const section = document.getElementById(`comments-${postId}`);
-  section.innerHTML = '';
+  if (!section) return;
 
-  const snap = await db.collection('posts').doc(postId)
-    .collection('comments')
-    .orderBy('createdAt', 'asc').get();
+  // Clean up existing listener for this post if any
+  if (commentListeners[postId]) {
+    commentListeners[postId]();
+    delete commentListeners[postId];
+  }
 
-  // Build tree: top-level comments, then replies
-  const topLevel = snap.docs.filter(d => !d.data().parentId);
-  const replies  = snap.docs.filter(d =>  d.data().parentId);
-
-  topLevel.forEach(doc => {
-    section.appendChild(buildCommentEl(doc, postId, postAuthorId, false));
-    // Replies to this comment
-    const myReplies = replies.filter(r => r.data().parentId === doc.id);
-    if (myReplies.length > 0) {
-      const replyWrap = document.createElement('div');
-      replyWrap.className = 'comment-replies';
-      myReplies.forEach(r =>
-        replyWrap.appendChild(buildCommentEl(r, postId, postAuthorId, true)));
-      section.appendChild(replyWrap);
-    }
-  });
-
-  // Input row
-  const inputRow = document.createElement('div');
-  inputRow.className = 'comment-input-row';
-  inputRow.innerHTML = `
-    <input type="text" placeholder="Add a comment…" class="post-comment-input" data-post="${postId}" />
-    <button class="post-comment-submit" data-post="${postId}">Send</button>
+  // Build the persistent input row ONCE — it never gets wiped
+  section.innerHTML = `
+    <div id="comment-list-${postId}" class="comment-list"></div>
+    <div class="comment-input-row" id="comment-input-row-${postId}">
+      <input type="text" placeholder="Add a comment…"
+        class="post-comment-input" id="comment-input-${postId}" />
+      <button class="post-comment-submit" id="comment-submit-${postId}">Send</button>
+    </div>
   `;
-  inputRow.querySelector('.post-comment-submit').onclick = () =>
-    submitPostComment(postId, postAuthorId, null);
-  inputRow.querySelector('.post-comment-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') submitPostComment(postId, postAuthorId, null);
-  });
-  section.appendChild(inputRow);
+
+  // Wire up the input — these references are stable now
+  const input  = document.getElementById(`comment-input-${postId}`);
+  const submit = document.getElementById(`comment-submit-${postId}`);
+
+  const doSubmit = () => submitPostComment(postId, postAuthorId, null, input);
+  submit.onclick = doSubmit;
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') doSubmit(); });
+
+  // Real-time listener for comments
+  const unsub = db.collection('posts').doc(postId)
+    .collection('comments')
+    .orderBy('createdAt', 'asc')
+    .onSnapshot(snap => {
+      const list = document.getElementById(`comment-list-${postId}`);
+      if (!list) return;
+      list.innerHTML = '';
+
+      const allDocs   = snap.docs;
+      const topLevel  = allDocs.filter(d => !d.data().parentId);
+      const replies   = allDocs.filter(d =>  d.data().parentId);
+
+      if (topLevel.length === 0) {
+        list.innerHTML = '<p style="color:#aaa;font-size:0.82rem;margin:0.3rem 0">No comments yet — be the first!</p>';
+        return;
+      }
+
+      topLevel.forEach(doc => {
+        list.appendChild(buildCommentEl(doc, postId, postAuthorId, false));
+        const myReplies = replies.filter(r => r.data().parentId === doc.id);
+        if (myReplies.length > 0) {
+          const replyWrap = document.createElement('div');
+          replyWrap.className = 'comment-replies';
+          myReplies.forEach(r =>
+            replyWrap.appendChild(buildCommentEl(r, postId, postAuthorId, true)));
+          list.appendChild(replyWrap);
+        }
+      });
+    });
+
+  commentListeners[postId] = unsub;
 }
 
 function buildCommentEl(doc, postId, postAuthorId, isReply) {
@@ -286,7 +317,7 @@ function buildCommentEl(doc, postId, postAuthorId, isReply) {
       if (c.authorId !== currentUser.uid)
         await sendNotification(c.authorId, 'comment_like');
     }
-    loadPostComments(postId, postAuthorId);
+    // Real-time listener handles the update automatically
   };
 
   // Reply button
@@ -298,10 +329,11 @@ function buildCommentEl(doc, postId, postAuthorId, isReply) {
       if (row.style.display !== 'none') row.querySelector('input').focus();
     };
     const replyRow = document.getElementById(`reply-${doc.id}`);
+    const replyInput = replyRow.querySelector('input');
     replyRow.querySelector('button').onclick = () =>
-      submitPostComment(postId, postAuthorId, doc.id);
-    replyRow.querySelector('input').addEventListener('keydown', e => {
-      if (e.key === 'Enter') submitPostComment(postId, postAuthorId, doc.id);
+      submitPostComment(postId, postAuthorId, doc.id, replyInput);
+    replyInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitPostComment(postId, postAuthorId, doc.id, replyInput);
     });
   }
 
@@ -309,36 +341,56 @@ function buildCommentEl(doc, postId, postAuthorId, isReply) {
   const delBtn = item.querySelector('.comment-delete-btn');
   if (delBtn) delBtn.onclick = async () => {
     await db.collection('posts').doc(postId).collection('comments').doc(doc.id).delete();
-    loadPostComments(postId, postAuthorId);
+    // Real-time listener handles the update automatically
   };
 
   return item;
 }
 
-async function submitPostComment(postId, postAuthorId, parentId) {
-  let input;
-  if (parentId) {
+// inputEl is passed directly so we never do a DOM query that could
+// match the wrong element when multiple posts are open
+async function submitPostComment(postId, postAuthorId, parentId, inputEl) {
+  // For replies, find the input inside the reply row
+  let input = inputEl;
+  if (!input && parentId) {
     input = document.getElementById(`reply-${parentId}`)?.querySelector('input');
-  } else {
-    input = document.querySelector(`.post-comment-input[data-post="${postId}"]`);
   }
   if (!input) return;
+
   const text = input.value.trim();
   if (!text) return;
 
-  await db.collection('posts').doc(postId).collection('comments').add({
-    text, parentId: parentId || null,
-    authorId:    currentUser.uid,
-    authorName:  currentUser.displayName || currentUser.email,
-    authorPhoto: currentUser.photoURL || '',
-    likes:       [],
-    createdAt:   firebase.firestore.FieldValue.serverTimestamp()
-  });
+  // Disable while saving to prevent double-submit
+  input.disabled = true;
 
-  input.value = '';
-  if (postAuthorId !== currentUser.uid)
-    await sendNotification(postAuthorId, 'post_comment', { postId });
-  loadPostComments(postId, postAuthorId);
+  try {
+    await db.collection('posts').doc(postId).collection('comments').add({
+      text,
+      parentId:    parentId || null,
+      authorId:    currentUser.uid,
+      authorName:  currentUser.displayName || currentUser.email,
+      authorPhoto: currentUser.photoURL || '',
+      likes:       [],
+      createdAt:   firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    input.value = '';
+
+    if (postAuthorId !== currentUser.uid)
+      sendNotification(postAuthorId, 'post_comment', { postId });
+
+    // Close reply row if this was a reply
+    if (parentId) {
+      const row = document.getElementById(`reply-${parentId}`);
+      if (row) row.style.display = 'none';
+    }
+
+    // Real-time listener will update the list automatically —
+    // no need to call loadPostComments again
+  } finally {
+    input.disabled = false;
+    input.focus();
+  }
 }
 
 // ── Compose (Feed tab) ────────────────────────────────────────────

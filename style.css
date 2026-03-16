@@ -206,9 +206,9 @@ html, body { height: 100%; margin: 0; font-family: 'Schoolbell', cursive; backgr
 .upload-progress-bar { height: 100%; background: var(--header); border-radius: 3px; width: 0%; transition: width 0.2s; }
 
 /* ===== COMMUNITY ===== */
-.comm-page { display: none; flex-direction: column; padding: 0; height: calc(100vh - 60px); }
+.comm-page { display: none; flex-direction: column; padding: 0; height: calc(100vh - 60px); max-height: calc(100vh - 60px); overflow: hidden; min-height: 0; }
 .comm-page.active { display: flex; }
-#comm-content { flex: 1; overflow-y: auto; padding-bottom: 60px; }
+#comm-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 60px; min-height: 0; }
 .comm-tab-content { display: none; padding: 1.5rem; max-width: 680px; margin: 0 auto; width: 100%; }
 .comm-tab-content.active { display: block; }
 
@@ -218,10 +218,10 @@ html, body { height: 100%; margin: 0; font-family: 'Schoolbell', cursive; backgr
 .comm-nav-btn:hover { background: rgba(47,79,47,0.07); }
 .comm-nav-btn.active { color: var(--header); }
 .comm-nav-icon { font-size: 1.3rem; }
-.comm-nav-post { background: var(--header); border-radius: 50%; width: 46px; height: 46px; color: white; padding: 0; align-self: center; }
+.comm-nav-post { background: var(--header); border-radius: 50%; width: 46px; height: 46px; color: white; padding: 0; align-self: center; display: flex; align-items: center; justify-content: center; }
 .comm-nav-post:hover { background: var(--header-dark); }
-.comm-nav-post .comm-nav-icon { font-size: 1.6rem; }
-.post-plus { color: white; line-height: 1; }
+.comm-nav-post .comm-nav-icon { font-size: 1.6rem; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.post-plus { color: white; line-height: 1; font-size: 1.8rem; }
 .comm-badge { position: absolute; top: 0; right: 0; background: #e74c3c; color: white; font-size: 0.62rem; width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
 /* Feed */
@@ -637,3 +637,23 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 0.3rem solid #e67e00 
 .cal-legend-title { font-size: 0.9rem; color: #888; margin: 0 0 0.5rem; }
 .cal-legend-item { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px dashed rgba(47,79,47,0.1); font-size: 0.88rem; }
 .cal-legend-count { color: #888; font-size: 0.82rem; }
+
+/* ===== PLANT AUTOFILL BUTTON ===== */
+.plant-autofill-btn {
+  margin-top: 0.5rem;
+  width: 100%;
+  background: var(--green-light);
+  border: 1px solid var(--green-mid);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.82rem;
+  color: var(--accent);
+  transition: background 0.15s;
+  text-align: center;
+}
+.plant-autofill-btn:hover {
+  background: var(--green-mid);
+  color: white;
+}
