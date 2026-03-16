@@ -5,6 +5,7 @@
 let activeConvId     = null;
 let msgsUnsubscribe  = null;
 let convsUnsubscribe = null;
+const dmNotifiedConvs = new Set(); // tracks convs already notified this session
 
 // ── Init DMs ─────────────────────────────────────────────────────
 function initDms() {
@@ -256,13 +257,20 @@ async function sendDm(convId, otherId, imageUrl = null, isImage = false) {
 
   if (input) input.value = '';
 
-  // Send notification to recipient
-  await sendNotification(otherId, 'dm', {
-    convId,
-    fromUid:   currentUser.uid,
-    fromName:  currentUser.displayName || currentUser.email,
-    fromPhoto: currentUser.photoURL || ''
-  });
+  // Only notify if the recipient doesn't have this conversation open right now.
+  // We detect this by checking if the conv is in their unreadBy after we set it —
+  // simpler: just throttle to one notification per conversation per session.
+  if (!dmNotifiedConvs.has(convId)) {
+    dmNotifiedConvs.add(convId);
+    sendNotification(otherId, 'dm', {
+      convId,
+      fromUid:   currentUser.uid,
+      fromName:  currentUser.displayName || currentUser.email,
+      fromPhoto: currentUser.photoURL || ''
+    });
+    // Reset after 60s so they get notified again if they go away and come back
+    setTimeout(() => dmNotifiedConvs.delete(convId), 60000);
+  }
 }
 
 // ── Open DM with a specific user ──────────────────────────────────
