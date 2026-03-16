@@ -155,54 +155,63 @@ document.getElementById('navLogo').onclick = () => {
 // ================================================================
 // MY GARDENS
 // ================================================================
-const myGrid     = document.getElementById('my-gardens-grid');
-const emptyState = document.getElementById('empty-state');
+const myGrid      = document.getElementById('my-gardens-grid');
+const sharedGrid  = document.getElementById('shared-gardens-grid');
+const sharedSection = document.getElementById('shared-section');
+const emptyState  = document.getElementById('empty-state');
 
 document.getElementById('createGardenBtn').onclick = openCreateModal;
 document.getElementById('emptyCreateBtn').onclick  = openCreateModal;
 
-let myGardensUnsubscribe = null;
+let myGardensUnsubscribe    = null;
+let sharedGardensUnsubscribe = null;
 
 function loadMyGardens() {
-  if (myGardensUnsubscribe) myGardensUnsubscribe();
+  if (myGardensUnsubscribe)    myGardensUnsubscribe();
+  if (sharedGardensUnsubscribe) sharedGardensUnsubscribe();
 
-  const mergeAndRender = (ownedSnap, collabSnap) => {
+  // ── Owned gardens ──────────────────────────────────────────
+  const renderOwned = (snap) => {
     myGrid.innerHTML = '';
-    const allDocs = [];
-    ownedSnap.forEach(doc => allDocs.push({ doc, isOwn: true }));
-    if (collabSnap) {
-      collabSnap.forEach(doc => {
-        if (!allDocs.find(d => d.doc.id === doc.id))
-          allDocs.push({ doc, isOwn: false });
-      });
+    if (snap.empty) {
+      emptyState.style.display = 'block';
+    } else {
+      emptyState.style.display = 'none';
+      snap.forEach(doc => myGrid.appendChild(buildGardenCard(doc.id, doc.data(), true)));
     }
-    if (allDocs.length === 0) { emptyState.style.display = 'block'; return; }
-    emptyState.style.display = 'none';
-    allDocs.forEach(({ doc, isOwn }) =>
-      myGrid.appendChild(buildGardenCard(doc.id, doc.data(), isOwn)));
-  };
-
-  const renderAll = (ownedSnap) => {
-    db.collection('gardens')
-      .where('collaboratorEmails', 'array-contains', currentUser.email)
-      .get()
-      .then(collabSnap => mergeAndRender(ownedSnap, collabSnap))
-      .catch(() => mergeAndRender(ownedSnap, null));
   };
 
   myGardensUnsubscribe = db.collection('gardens')
     .where('ownerId', '==', currentUser.uid)
     .orderBy('createdAt', 'desc')
-    .onSnapshot(
-      snap => renderAll(snap),
-      () => {
-        db.collection('gardens')
-          .where('ownerId', '==', currentUser.uid)
-          .get()
-          .then(snap => renderAll(snap))
-          .catch(err => console.error('loadMyGardens failed:', err));
-      }
-    );
+    .onSnapshot(renderOwned, () => {
+      // Index not ready — fall back to unordered
+      db.collection('gardens')
+        .where('ownerId', '==', currentUser.uid)
+        .get()
+        .then(renderOwned)
+        .catch(err => console.error('Owned gardens error:', err));
+    });
+
+  // ── Shared / collaborator gardens ─────────────────────────
+  // Requires Firestore rules to allow: request.auth.email in collaboratorEmails
+  const renderShared = (snap) => {
+    sharedGrid.innerHTML = '';
+    if (snap.empty) {
+      sharedSection.style.display = 'none';
+    } else {
+      sharedSection.style.display = 'block';
+      snap.forEach(doc => sharedGrid.appendChild(buildGardenCard(doc.id, doc.data(), false)));
+    }
+  };
+
+  sharedGardensUnsubscribe = db.collection('gardens')
+    .where('collaboratorEmails', 'array-contains', currentUser.email)
+    .onSnapshot(renderShared, (err) => {
+      console.error('Shared gardens error:', err.message);
+      // Silently hide section if query fails
+      sharedSection.style.display = 'none';
+    });
 }
 
 // ================================================================
