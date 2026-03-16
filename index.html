@@ -25,12 +25,12 @@
 <!-- ============ APP SHELL ============ -->
 <div id="app" style="display:none">
 
-  <!-- NAV -->
   <nav id="main-nav">
     <div class="nav-logo" id="navLogo">🌿 Ants In Your Plants</div>
     <div class="nav-links">
-      <button class="nav-btn active" data-page="home" id="navHomeBtn">My Gardens</button>
-      <button class="nav-btn" data-page="public" id="navPublicBtn">Public Gardens</button>
+      <button class="nav-btn active" data-page="home">My Gardens</button>
+      <button class="nav-btn" data-page="public">Public Gardens</button>
+      <button class="nav-btn" data-page="community">🌻 Community</button>
     </div>
     <div class="nav-user">
       <span id="userNameDisplay"></span>
@@ -41,20 +41,16 @@
     </div>
   </nav>
 
-  <!-- ============ HOME PAGE ============ -->
+  <!-- HOME -->
   <div id="page-home" class="page active">
     <div class="page-header">
       <div>
-        <h1 id="homeGreeting">My Gardens</h1>
+        <h1>My Gardens</h1>
         <p class="page-subtitle">Your personal growing spaces</p>
       </div>
       <button class="btn-create" id="createGardenBtn">＋ New Garden</button>
     </div>
-
-    <div id="my-gardens-grid" class="gardens-grid">
-      <!-- populated by JS -->
-    </div>
-
+    <div id="my-gardens-grid" class="gardens-grid"></div>
     <div id="empty-state" style="display:none">
       <div class="empty-icon">🪴</div>
       <h2>No gardens yet!</h2>
@@ -63,7 +59,7 @@
     </div>
   </div>
 
-  <!-- ============ PUBLIC PAGE ============ -->
+  <!-- PUBLIC -->
   <div id="page-public" class="page">
     <div class="page-header">
       <div>
@@ -71,9 +67,7 @@
         <p class="page-subtitle">Explore what others are growing</p>
       </div>
     </div>
-    <div id="public-gardens-grid" class="gardens-grid">
-      <!-- populated by JS -->
-    </div>
+    <div id="public-gardens-grid" class="gardens-grid"></div>
     <div id="public-empty-state" style="display:none">
       <div class="empty-icon">🌻</div>
       <h2>No public gardens yet</h2>
@@ -81,7 +75,44 @@
     </div>
   </div>
 
-  <!-- ============ GARDEN VIEW PAGE ============ -->
+  <!-- COMMUNITY -->
+  <div id="page-community" class="page">
+    <div class="page-header">
+      <div>
+        <h1>Community</h1>
+        <p class="page-subtitle">Share what's growing in your world</p>
+      </div>
+    </div>
+
+    <div class="compose-box">
+      <div class="compose-avatar" id="composeAvatar"></div>
+      <div class="compose-main">
+        <textarea id="postTextInput" placeholder="What's growing? Share a photo, update, or question..." rows="3"></textarea>
+        <div class="compose-img-preview" id="composeImgPreview" style="display:none">
+          <img id="composeImgThumb" src="" alt="" />
+          <button class="remove-img-btn" id="removeImgBtn">✕</button>
+        </div>
+        <input id="imgUrlInput" type="text" placeholder="Paste an image URL and press Enter…" class="img-url-input" style="display:none" />
+        <div class="compose-actions">
+          <div class="compose-left">
+            <button class="compose-icon-btn" id="addImgBtn" title="Add image">🖼</button>
+            <button class="compose-icon-btn" id="tagGardenBtn" title="Tag a garden">🌿 Tag garden</button>
+          </div>
+          <div class="compose-tags" id="composeTags"></div>
+          <button class="btn-post" id="submitPostBtn">Post</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="community-feed"></div>
+    <div id="feed-empty" style="display:none">
+      <div class="empty-icon">🌱</div>
+      <h2>Nothing here yet</h2>
+      <p>Be the first to post something!</p>
+    </div>
+  </div>
+
+  <!-- GARDEN VIEW -->
   <div id="page-garden" class="page">
     <div class="garden-page-header">
       <button class="back-btn" id="backBtn">← Back</button>
@@ -90,26 +121,22 @@
         <span id="gardenOwnerBadge" class="owner-badge"></span>
       </div>
       <div class="garden-page-actions">
-        <button id="mergeModeBtn" class="header-action-btn">⊞ Merge Tiles</button>
-        <button id="togglePublicBtn" class="header-action-btn" style="display:none">🌍 Make Public</button>
+        <button id="mergeModeBtn" class="header-action-btn">⊞ Merge</button>
+        <button id="gardenSettingsBtn" class="header-action-btn" style="display:none">⚙ Settings</button>
       </div>
     </div>
 
     <div id="garden-view-layout">
-      <!-- Garden grid -->
       <div class="garden-col">
         <div id="garden-container" aria-label="garden grid"></div>
       </div>
-
-      <!-- Desktop side panel -->
       <div class="panel-col">
         <section id="info-panel">
           <div id="defaultInfo">
             <h2>Welcome to the Garden</h2>
-            <p>Select a plot on the left to view or edit its details. Tiles stay blank until you add a title.</p>
-            <p style="margin-top:1rem;font-size:0.9rem;color:#666;">Use <strong>⊞ Merge Tiles</strong> in the header to combine adjacent plots into one.</p>
+            <p>Select a plot to view or edit its details.</p>
+            <p style="margin-top:0.8rem;font-size:0.9rem;color:#666;">Use <strong>⊞ Merge</strong> to combine adjacent plots.</p>
           </div>
-
           <div id="editInfo" style="display:none">
             <h2 id="plotTitle">Plot</h2>
             <div class="field">
@@ -118,7 +145,7 @@
             </div>
             <div class="field">
               <label for="descInput">Description</label>
-              <textarea id="descInput" rows="6" placeholder="Notes about this plot"></textarea>
+              <textarea id="descInput" rows="5" placeholder="Notes about this plot"></textarea>
             </div>
             <div class="field">
               <label for="imgInput">Image URL (optional)</label>
@@ -139,7 +166,6 @@
       </div>
     </div>
 
-    <!-- Floating merge toolbar -->
     <div id="merge-toolbar">
       <span id="mergeCount">Tap tiles to select</span>
       <button id="mergeConfirmBtn" disabled>Merge</button>
@@ -149,19 +175,17 @@
 
 </div><!-- end #app -->
 
-<!-- ============ CREATE GARDEN MODAL ============ -->
+<!-- CREATE GARDEN MODAL -->
 <div id="create-modal-overlay">
   <div id="create-modal">
     <button class="modal-close-btn" id="createModalCloseBtn">✕</button>
     <div class="create-modal-icon">🌱</div>
     <h2>Create a New Garden</h2>
     <p class="create-modal-sub">Let's set up your growing space</p>
-
     <div class="field">
       <label for="gardenNameInput">Garden Name</label>
       <input id="gardenNameInput" type="text" placeholder="e.g. Backyard Raised Beds" maxlength="50" />
     </div>
-
     <div class="field">
       <label>Grid Size</label>
       <p class="field-hint">How many plots do you want? (rows × columns)</p>
@@ -189,7 +213,6 @@
         <span id="gridPreviewLabel" class="grid-preview-label">36 plots</span>
       </div>
     </div>
-
     <div class="field">
       <label>Visibility</label>
       <div class="visibility-toggle">
@@ -197,12 +220,55 @@
         <button class="vis-btn" data-val="public" id="visPublic">🌍 Public</button>
       </div>
     </div>
-
     <button class="btn-create full-width" id="confirmCreateGardenBtn">Create Garden 🌿</button>
   </div>
 </div>
 
-<!-- Mobile tile modal -->
+<!-- GARDEN SETTINGS MODAL -->
+<div id="settings-modal-overlay">
+  <div id="settings-modal">
+    <button class="modal-close-btn" id="settingsModalCloseBtn">✕</button>
+    <h2>⚙ Garden Settings</h2>
+    <p class="create-modal-sub" id="settingsGardenName"></p>
+
+    <div class="field">
+      <label>Visibility</label>
+      <div class="visibility-toggle">
+        <button class="vis-btn" id="settingsVisPrivate">🔒 Private</button>
+        <button class="vis-btn" id="settingsVisPublic">🌍 Public</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Collaborators</label>
+      <p class="field-hint">Add people by email — they can view and edit this garden even if it's private.</p>
+      <div class="collab-input-row">
+        <input id="collabEmailInput" type="email" placeholder="friend@example.com" />
+        <button class="btn-add-collab" id="addCollabBtn">Add</button>
+      </div>
+      <div id="collabList" class="collab-list"></div>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="danger-zone">
+      <p class="danger-label">⚠ Danger Zone</p>
+      <button class="btn-danger" id="deleteGardenBtn">🗑 Delete this garden permanently</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAG GARDEN PICKER -->
+<div id="tag-picker-overlay">
+  <div id="tag-picker">
+    <button class="modal-close-btn" id="tagPickerCloseBtn">✕</button>
+    <h2>Tag a garden</h2>
+    <p class="create-modal-sub">Pick from your public gardens</p>
+    <div id="tag-picker-list"></div>
+  </div>
+</div>
+
+<!-- MOBILE TILE MODAL -->
 <div id="modal-overlay">
   <div id="modal-box">
     <div class="modal-handle"></div>
@@ -213,7 +279,7 @@
     </div>
     <div class="field">
       <label for="modal-descInput">Description</label>
-      <textarea id="modal-descInput" rows="5" placeholder="Notes about this plot"></textarea>
+      <textarea id="modal-descInput" rows="4" placeholder="Notes about this plot"></textarea>
     </div>
     <div class="field">
       <label for="modal-imgInput">Image URL (optional)</label>
@@ -232,11 +298,9 @@
   </div>
 </div>
 
-<!-- Firebase Compat CDN -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-
 <script>
   firebase.initializeApp({
     apiKey: "AIzaSyDFVgPG-oauNpgmkXWK0Wvj6z4PmyqWNY0",
@@ -248,7 +312,6 @@
     measurementId: "G-5YPFK3Y376"
   });
 </script>
-
 <script src="script.js"></script>
 </body>
 </html>

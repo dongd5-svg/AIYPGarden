@@ -12,7 +12,6 @@ const userNameDisplay = document.getElementById('userNameDisplay');
 
 document.getElementById('googleBtn').onclick = () =>
   auth.signInWithPopup(provider).catch(err => alert(err.message));
-
 signOutBtn.onclick = () => auth.signOut();
 
 let currentUser = null;
@@ -24,88 +23,90 @@ auth.onAuthStateChanged(user => {
     appShell.style.display  = 'block';
     userNameDisplay.textContent = user.displayName || user.email;
     if (user.photoURL) document.getElementById('profileImg').src = user.photoURL;
+    // Set compose avatar initials
+    const av = document.getElementById('composeAvatar');
+    if (av) {
+      if (user.photoURL) {
+        av.style.backgroundImage = `url(${user.photoURL})`;
+        av.style.backgroundSize = 'cover';
+        av.textContent = '';
+      } else {
+        av.textContent = (user.displayName || user.email || '?')[0].toUpperCase();
+      }
+    }
     navigateTo('home');
     loadMyGardens();
   } else {
     loginGate.style.display = 'flex';
     appShell.style.display  = 'none';
-    userNameDisplay.textContent = '';
-    document.getElementById('profileImg').src = '';
   }
 });
 
 // ================================================================
-// PAGE NAVIGATION
+// NAVIGATION
 // ================================================================
 let currentPage = 'home';
 
 function navigateTo(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-
   const pageEl = document.getElementById('page-' + page);
   if (pageEl) pageEl.classList.add('active');
-
   const navBtn = document.querySelector(`.nav-btn[data-page="${page}"]`);
   if (navBtn) navBtn.classList.add('active');
-
   currentPage = page;
-
   if (page === 'public') loadPublicGardens();
+  if (page === 'community') loadFeed();
 }
 
 document.querySelectorAll('.nav-btn').forEach(btn => {
-  btn.onclick = () => {
-    if (currentGardenId) exitGarden();
-    navigateTo(btn.dataset.page);
-  };
+  btn.onclick = () => { if (currentGardenId) exitGarden(); navigateTo(btn.dataset.page); };
 });
-
 document.getElementById('navLogo').onclick = () => {
-  if (currentGardenId) exitGarden();
-  navigateTo('home');
+  if (currentGardenId) exitGarden(); navigateTo('home');
 };
 
 // ================================================================
-// HOME PAGE – MY GARDENS
+// MY GARDENS
 // ================================================================
-const gardensCol  = document.getElementById('gardens');
-const emptyState  = document.getElementById('empty-state');
-const myGrid      = document.getElementById('my-gardens-grid');
+const myGrid     = document.getElementById('my-gardens-grid');
+const emptyState = document.getElementById('empty-state');
 
-document.getElementById('createGardenBtn').onclick  = openCreateModal;
-document.getElementById('emptyCreateBtn').onclick   = openCreateModal;
+document.getElementById('createGardenBtn').onclick = openCreateModal;
+document.getElementById('emptyCreateBtn').onclick  = openCreateModal;
 
 let myGardensUnsubscribe = null;
 
 function loadMyGardens() {
   if (myGardensUnsubscribe) myGardensUnsubscribe();
-
-  myGardensUnsubscribe = db.collection('gardens')
+  const query = db.collection('gardens')
     .where('ownerId', '==', currentUser.uid)
-    .orderBy('createdAt', 'desc')
-    .onSnapshot(snapshot => {
-      myGrid.innerHTML = '';
-      if (snapshot.empty) {
-        emptyState.style.display = 'block';
-        return;
-      }
-      emptyState.style.display = 'none';
-      snapshot.forEach(doc => {
-        myGrid.appendChild(buildGardenCard(doc.id, doc.data(), true));
-      });
-    }, err => {
-      // If index not ready yet, fall back to unordered query
-      db.collection('gardens')
-        .where('ownerId', '==', currentUser.uid)
-        .get()
-        .then(snapshot => {
-          myGrid.innerHTML = '';
-          if (snapshot.empty) { emptyState.style.display = 'block'; return; }
-          emptyState.style.display = 'none';
-          snapshot.forEach(doc => myGrid.appendChild(buildGardenCard(doc.id, doc.data(), true)));
+    .orderBy('createdAt', 'desc');
+
+  const renderCards = (snapshot) => {
+    // Also fetch gardens where user is a collaborator
+    db.collection('gardens')
+      .where('collaboratorEmails', 'array-contains', currentUser.email)
+      .get()
+      .then(collabSnap => {
+        myGrid.innerHTML = '';
+        const allDocs = [];
+        snapshot.forEach(doc => allDocs.push({ doc, isOwn: true }));
+        collabSnap.forEach(doc => {
+          if (!allDocs.find(d => d.doc.id === doc.id))
+            allDocs.push({ doc, isOwn: false });
         });
-    });
+        if (allDocs.length === 0) { emptyState.style.display = 'block'; return; }
+        emptyState.style.display = 'none';
+        allDocs.forEach(({ doc, isOwn }) =>
+          myGrid.appendChild(buildGardenCard(doc.id, doc.data(), isOwn)));
+      });
+  };
+
+  myGardensUnsubscribe = query.onSnapshot(renderCards, () => {
+    db.collection('gardens').where('ownerId', '==', currentUser.uid).get()
+      .then(snap => renderCards(snap));
+  });
 }
 
 // ================================================================
@@ -115,102 +116,85 @@ const publicGrid       = document.getElementById('public-gardens-grid');
 const publicEmptyState = document.getElementById('public-empty-state');
 
 function loadPublicGardens() {
-  db.collection('gardens')
-    .where('visibility', '==', 'public')
-    .get()
-    .then(snapshot => {
-      publicGrid.innerHTML = '';
-      if (snapshot.empty) { publicEmptyState.style.display = 'block'; return; }
-      publicEmptyState.style.display = 'none';
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const isOwn = currentUser && data.ownerId === currentUser.uid;
-        publicGrid.appendChild(buildGardenCard(doc.id, data, isOwn));
-      });
+  db.collection('gardens').where('visibility', '==', 'public').get().then(snapshot => {
+    publicGrid.innerHTML = '';
+    if (snapshot.empty) { publicEmptyState.style.display = 'block'; return; }
+    publicEmptyState.style.display = 'none';
+    snapshot.forEach(doc => {
+      const isOwn = currentUser && doc.data().ownerId === currentUser.uid;
+      publicGrid.appendChild(buildGardenCard(doc.id, doc.data(), isOwn));
     });
+  });
 }
 
 // ================================================================
-// GARDEN CARD BUILDER
+// GARDEN CARD
 // ================================================================
 function buildGardenCard(gardenId, data, isOwn) {
   const card = document.createElement('div');
   card.className = 'garden-card';
-
   const rows = data.rows || 6;
   const cols = data.cols || 6;
-  const previewRows = Math.min(rows, 12);
-  const previewCols = Math.min(cols, 12);
+  const pRows = Math.min(rows, 12), pCols = Math.min(cols, 12);
 
-  // Mini grid preview
   const preview = document.createElement('div');
   preview.className = 'garden-card-preview';
-  preview.style.gridTemplateColumns = `repeat(${previewCols}, 1fr)`;
-  preview.style.gridTemplateRows    = `repeat(${previewRows}, 1fr)`;
-
-  // Build a map of cells by tileId for quick lookup
+  preview.style.gridTemplateColumns = `repeat(${pCols}, 1fr)`;
+  preview.style.gridTemplateRows    = `repeat(${pRows}, 1fr)`;
   const cellMap = {};
-  for (let r = 0; r < previewRows; r++) {
-    for (let c = 0; c < previewCols; c++) {
-      const cell = document.createElement('div');
-      cell.className = 'mini-tile';
-      cellMap[`r${r}c${c}`] = cell;
-      preview.appendChild(cell);
-    }
+  for (let r = 0; r < pRows; r++) for (let c = 0; c < pCols; c++) {
+    const cell = document.createElement('div');
+    cell.className = 'mini-tile';
+    cellMap[`r${r}c${c}`] = cell;
+    preview.appendChild(cell);
   }
-
-  // Fetch real tile colors from Firestore
   db.collection('gardens').doc(gardenId).collection('tiles').get().then(snap => {
     snap.forEach(doc => {
-      const cell = cellMap[doc.id];
-      if (cell && doc.data().color) {
-        cell.style.background = doc.data().color;
-      }
+      if (cellMap[doc.id] && doc.data().color)
+        cellMap[doc.id].style.background = doc.data().color;
     });
   });
 
+  const isCollab = !isOwn && data.collaboratorEmails?.includes(currentUser?.email);
   const badge = data.visibility === 'public'
     ? '<span class="garden-card-badge badge-public">🌍 Public</span>'
-    : '<span class="garden-card-badge badge-private">🔒 Private</span>';
+    : isCollab
+      ? '<span class="garden-card-badge badge-collab">✏ Collaborator</span>'
+      : '<span class="garden-card-badge badge-private">🔒 Private</span>';
 
-  const ownerLine = !isOwn && data.ownerName
-    ? `<div class="garden-card-owner">by ${data.ownerName}</div>`
-    : '';
+  const ownerLine = (!isOwn && !isCollab) && data.ownerName
+    ? `<div class="garden-card-owner">by ${escHtml(data.ownerName)}</div>` : '';
+  const collabLine = isCollab && data.ownerName
+    ? `<div class="garden-card-owner">by ${escHtml(data.ownerName)}</div>` : '';
 
   card.innerHTML = `
-    <div class="garden-card-meta">
-      ${badge}
-      <span>${rows}×${cols} grid</span>
-    </div>
+    <div class="garden-card-meta">${badge}<span>${rows}×${cols}</span></div>
     <h3>${escHtml(data.name || 'Unnamed Garden')}</h3>
-    ${ownerLine}
+    ${ownerLine}${collabLine}
   `;
   card.insertBefore(preview, card.firstChild);
-
-  card.onclick = () => openGarden(gardenId, data, isOwn);
+  card.onclick = () => openGarden(gardenId, data, isOwn || isCollab);
   return card;
 }
 
-function escHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // ================================================================
 // CREATE GARDEN MODAL
 // ================================================================
-const createOverlay = document.getElementById('create-modal-overlay');
+const createOverlay   = document.getElementById('create-modal-overlay');
 const gardenNameInput = document.getElementById('gardenNameInput');
 const gridRowsInput   = document.getElementById('gridRows');
 const gridColsInput   = document.getElementById('gridCols');
-const gridPreview     = document.getElementById('gridPreview');
+const gridPreviewEl   = document.getElementById('gridPreview');
 const gridPreviewLabel= document.getElementById('gridPreviewLabel');
-
 let selectedVisibility = 'private';
 
 function openCreateModal() {
   gardenNameInput.value = '';
-  gridRowsInput.value = '6';
-  gridColsInput.value = '6';
+  gridRowsInput.value = '6'; gridColsInput.value = '6';
   selectedVisibility = 'private';
   document.getElementById('visPrivate').classList.add('active');
   document.getElementById('visPublic').classList.remove('active');
@@ -218,74 +202,160 @@ function openCreateModal() {
   createOverlay.classList.add('open');
   setTimeout(() => gardenNameInput.focus(), 200);
 }
+document.getElementById('createModalCloseBtn').onclick = () => createOverlay.classList.remove('open');
+createOverlay.addEventListener('click', e => { if (e.target === createOverlay) createOverlay.classList.remove('open'); });
 
-document.getElementById('createModalCloseBtn').onclick = () =>
-  createOverlay.classList.remove('open');
-
-createOverlay.addEventListener('click', e => {
-  if (e.target === createOverlay) createOverlay.classList.remove('open');
-});
-
-// Steppers
 document.querySelectorAll('.stepper-btn').forEach(btn => {
   btn.onclick = () => {
-    const target = document.getElementById(btn.dataset.target);
-    const dir    = parseInt(btn.dataset.dir);
-    const min    = parseInt(target.min) || 2;
-    const max    = parseInt(target.max) || 20;
-    const val    = Math.min(max, Math.max(min, parseInt(target.value) + dir));
-    target.value = val;
+    const t = document.getElementById(btn.dataset.target);
+    t.value = Math.min(+t.max||20, Math.max(+t.min||2, +t.value + +btn.dataset.dir));
     updateGridPreview();
   };
 });
-
 gridRowsInput.addEventListener('input', updateGridPreview);
 gridColsInput.addEventListener('input', updateGridPreview);
 
 function updateGridPreview() {
-  const r = Math.min(20, Math.max(2, parseInt(gridRowsInput.value) || 6));
-  const c = Math.min(20, Math.max(2, parseInt(gridColsInput.value) || 6));
-  gridPreview.style.gridTemplateColumns = `repeat(${Math.min(c, 16)}, 1fr)`;
-  gridPreview.style.gridTemplateRows    = `repeat(${Math.min(r, 16)}, 1fr)`;
-  gridPreview.innerHTML = '';
-  const count = Math.min(r, 16) * Math.min(c, 16);
-  for (let i = 0; i < count; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'preview-cell';
-    gridPreview.appendChild(cell);
+  const r = Math.min(20, Math.max(2, +gridRowsInput.value||6));
+  const c = Math.min(20, Math.max(2, +gridColsInput.value||6));
+  gridPreviewEl.style.gridTemplateColumns = `repeat(${Math.min(c,16)},1fr)`;
+  gridPreviewEl.style.gridTemplateRows    = `repeat(${Math.min(r,16)},1fr)`;
+  gridPreviewEl.innerHTML = '';
+  for (let i = 0; i < Math.min(r,16)*Math.min(c,16); i++) {
+    const cell = document.createElement('div'); cell.className = 'preview-cell';
+    gridPreviewEl.appendChild(cell);
   }
-  gridPreviewLabel.textContent = `${r * c} plot${r * c !== 1 ? 's' : ''}`;
+  gridPreviewLabel.textContent = `${r*c} plot${r*c!==1?'s':''}`;
 }
 
-// Visibility buttons
-document.getElementById('visPrivate').onclick = () => setVisibility('private');
-document.getElementById('visPublic').onclick  = () => setVisibility('public');
-function setVisibility(val) {
-  selectedVisibility = val;
-  document.getElementById('visPrivate').classList.toggle('active', val === 'private');
-  document.getElementById('visPublic').classList.toggle('active', val === 'public');
+document.getElementById('visPrivate').onclick = () => setVis('private');
+document.getElementById('visPublic').onclick  = () => setVis('public');
+function setVis(v) {
+  selectedVisibility = v;
+  document.getElementById('visPrivate').classList.toggle('active', v==='private');
+  document.getElementById('visPublic').classList.toggle('active', v==='public');
 }
 
 document.getElementById('confirmCreateGardenBtn').onclick = async () => {
   const name = gardenNameInput.value.trim();
   if (!name) { gardenNameInput.focus(); return; }
-
-  const rows = Math.min(20, Math.max(2, parseInt(gridRowsInput.value) || 6));
-  const cols = Math.min(20, Math.max(2, parseInt(gridColsInput.value) || 6));
-
+  const rows = Math.min(20, Math.max(2, +gridRowsInput.value||6));
+  const cols = Math.min(20, Math.max(2, +gridColsInput.value||6));
   const docRef = await db.collection('gardens').add({
-    name,
-    rows,
-    cols,
-    ownerId:    currentUser.uid,
-    ownerName:  currentUser.displayName || currentUser.email,
+    name, rows, cols,
+    ownerId:   currentUser.uid,
+    ownerName: currentUser.displayName || currentUser.email,
+    ownerEmail: currentUser.email,
     visibility: selectedVisibility,
-    createdAt:  firebase.firestore.FieldValue.serverTimestamp(),
-    updatedAt:  firebase.firestore.FieldValue.serverTimestamp()
+    collaboratorEmails: [],
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   });
-
   createOverlay.classList.remove('open');
-  openGarden(docRef.id, { name, rows, cols, ownerId: currentUser.uid, visibility: selectedVisibility }, true);
+  openGarden(docRef.id, { name, rows, cols, ownerId: currentUser.uid, visibility: selectedVisibility, collaboratorEmails: [] }, true);
+};
+
+// ================================================================
+// GARDEN SETTINGS MODAL (visibility + collaborators + delete)
+// ================================================================
+const settingsOverlay = document.getElementById('settings-modal-overlay');
+
+document.getElementById('settingsModalCloseBtn').onclick = () => settingsOverlay.classList.remove('open');
+settingsOverlay.addEventListener('click', e => { if (e.target === settingsOverlay) settingsOverlay.classList.remove('open'); });
+
+function openSettingsModal() {
+  if (!currentGardenData) return;
+  document.getElementById('settingsGardenName').textContent = currentGardenData.name || '';
+
+  // Sync visibility buttons
+  const isPublic = currentGardenData.visibility === 'public';
+  document.getElementById('settingsVisPrivate').classList.toggle('active', !isPublic);
+  document.getElementById('settingsVisPublic').classList.toggle('active', isPublic);
+
+  renderCollabList();
+  settingsOverlay.classList.add('open');
+}
+
+document.getElementById('gardenSettingsBtn').onclick = openSettingsModal;
+
+// Visibility toggles in settings
+document.getElementById('settingsVisPrivate').onclick = async () => {
+  await updateGardenVisibility('private');
+  document.getElementById('settingsVisPrivate').classList.add('active');
+  document.getElementById('settingsVisPublic').classList.remove('active');
+};
+document.getElementById('settingsVisPublic').onclick = async () => {
+  await updateGardenVisibility('public');
+  document.getElementById('settingsVisPublic').classList.add('active');
+  document.getElementById('settingsVisPrivate').classList.remove('active');
+};
+async function updateGardenVisibility(val) {
+  await db.collection('gardens').doc(currentGardenId).update({ visibility: val });
+  currentGardenData.visibility = val;
+}
+
+// Collaborators
+function renderCollabList() {
+  const list = document.getElementById('collabList');
+  list.innerHTML = '';
+  const emails = currentGardenData.collaboratorEmails || [];
+  if (emails.length === 0) {
+    list.innerHTML = '<p class="collab-empty">No collaborators yet.</p>';
+    return;
+  }
+  emails.forEach(email => {
+    const row = document.createElement('div');
+    row.className = 'collab-row';
+    row.innerHTML = `
+      <span class="collab-email">${escHtml(email)}</span>
+      <button class="collab-remove-btn" data-email="${escHtml(email)}">✕</button>
+    `;
+    row.querySelector('.collab-remove-btn').onclick = () => removeCollaborator(email);
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('addCollabBtn').onclick = addCollaborator;
+document.getElementById('collabEmailInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addCollaborator();
+});
+
+async function addCollaborator() {
+  const input = document.getElementById('collabEmailInput');
+  const email = input.value.trim().toLowerCase();
+  if (!email || !email.includes('@')) return;
+  const emails = currentGardenData.collaboratorEmails || [];
+  if (emails.includes(email)) { input.value = ''; return; }
+  emails.push(email);
+  await db.collection('gardens').doc(currentGardenId).update({ collaboratorEmails: emails });
+  currentGardenData.collaboratorEmails = emails;
+  input.value = '';
+  renderCollabList();
+}
+
+async function removeCollaborator(email) {
+  const emails = (currentGardenData.collaboratorEmails || []).filter(e => e !== email);
+  await db.collection('gardens').doc(currentGardenId).update({ collaboratorEmails: emails });
+  currentGardenData.collaboratorEmails = emails;
+  renderCollabList();
+}
+
+// Delete garden
+document.getElementById('deleteGardenBtn').onclick = async () => {
+  if (!currentGardenId) return;
+  const name = currentGardenData?.name || 'this garden';
+  if (!confirm(`Are you sure you want to permanently delete "${name}"? This cannot be undone.`)) return;
+
+  // Delete all tiles in subcollection first
+  const tilesSnap = await db.collection('gardens').doc(currentGardenId).collection('tiles').get();
+  const batch = db.batch();
+  tilesSnap.forEach(doc => batch.delete(doc.ref));
+  await batch.commit();
+  await db.collection('gardens').doc(currentGardenId).delete();
+
+  settingsOverlay.classList.remove('open');
+  exitGarden();
+  navigateTo('home');
 };
 
 // ================================================================
@@ -298,56 +368,43 @@ let tilesData         = {};
 let activeId          = null;
 let tilesUnsubscribe  = null;
 
-function tileId(r, c)  { return `r${r}c${c}`; }
-function tileRC(id)    { return { r: parseInt(id.match(/r(\d+)/)[1]), c: parseInt(id.match(/c(\d+)/)[1]) }; }
+function tileId(r, c) { return `r${r}c${c}`; }
+function tileRC(id)   { return { r: +id.match(/r(\d+)/)[1], c: +id.match(/c(\d+)/)[1] }; }
 
 function openGarden(gardenId, gardenData, isOwn) {
   currentGardenId   = gardenId;
   currentGardenData = gardenData;
   isGardenOwner     = isOwn;
 
-  // Update header
   document.getElementById('gardenTitle').textContent = gardenData.name || 'Garden';
-  document.getElementById('gardenOwnerBadge').textContent =
-    isOwn ? '' : `by ${gardenData.ownerName || 'unknown'}`;
+  document.getElementById('gardenOwnerBadge').textContent = isOwn ? '' : `by ${gardenData.ownerName || 'unknown'}`;
+  document.getElementById('gardenSettingsBtn').style.display = isOwn ? 'inline-block' : 'none';
 
-  document.getElementById('togglePublicBtn').style.display = isOwn ? 'inline-block' : 'none';
-  updateTogglePublicBtn();
-
-  // Navigate to garden page
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-garden').classList.add('active');
   currentPage = 'garden';
 
-  // Set up grid dimensions
   const rows = gardenData.rows || 6;
   const cols = gardenData.cols || 6;
   const container = document.getElementById('garden-container');
-
-  // Size the container
   const maxSize = Math.min(window.innerWidth > 900 ? window.innerHeight * 0.75 : window.innerWidth * 0.96, 700);
   container.style.width  = maxSize + 'px';
   container.style.height = maxSize + 'px';
   container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
   container.style.gridTemplateRows    = `repeat(${rows}, 1fr)`;
-
-  // Tile font size based on grid size
   const tilePx = maxSize / Math.max(rows, cols);
   container.style.fontSize = Math.max(8, Math.min(14, tilePx * 0.35)) + 'px';
 
-  // Reset panel
   activeId = null;
   document.getElementById('editInfo').style.display  = 'none';
   document.getElementById('defaultInfo').style.display = 'block';
 
-  // Subscribe to tiles
   if (tilesUnsubscribe) tilesUnsubscribe();
   tilesData = {};
-  tilesUnsubscribe = db.collection('gardens').doc(gardenId)
-    .collection('tiles')
-    .onSnapshot(snapshot => {
+  tilesUnsubscribe = db.collection('gardens').doc(gardenId).collection('tiles')
+    .onSnapshot(snap => {
       tilesData = {};
-      snapshot.forEach(doc => { tilesData[doc.id] = doc.data(); });
+      snap.forEach(doc => { tilesData[doc.id] = doc.data(); });
       renderGrid();
     });
 }
@@ -355,30 +412,13 @@ function openGarden(gardenId, gardenData, isOwn) {
 function exitGarden() {
   if (tilesUnsubscribe) { tilesUnsubscribe(); tilesUnsubscribe = null; }
   if (mergeMode) toggleMergeMode(false);
-  currentGardenId = null;
-  activeId = null;
-  tilesData = {};
+  currentGardenId = null; activeId = null; tilesData = {};
 }
 
 document.getElementById('backBtn').onclick = () => {
   exitGarden();
   navigateTo(currentUser ? 'home' : 'public');
 };
-
-// Toggle public/private
-document.getElementById('togglePublicBtn').onclick = async () => {
-  if (!currentGardenId || !isGardenOwner) return;
-  const newVis = currentGardenData.visibility === 'public' ? 'private' : 'public';
-  await db.collection('gardens').doc(currentGardenId).update({ visibility: newVis });
-  currentGardenData.visibility = newVis;
-  updateTogglePublicBtn();
-};
-
-function updateTogglePublicBtn() {
-  const btn = document.getElementById('togglePublicBtn');
-  if (!currentGardenData) return;
-  btn.textContent = currentGardenData.visibility === 'public' ? '🔒 Make Private' : '🌍 Make Public';
-}
 
 // ================================================================
 // RENDER GRID
@@ -388,126 +428,91 @@ function renderGrid() {
   const garden = document.getElementById('garden-container');
   const rows = currentGardenData.rows || 6;
   const cols = currentGardenData.cols || 6;
-
   garden.innerHTML = '';
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const id  = tileId(r, c);
-      const d   = tilesData[id] || {};
-      const div = document.createElement('div');
-
-      div.className = 'tile';
-      div.dataset.id = id;
-      div.style.background = d.color || '#e8ffd6';
-
-      const group = d.mergeGroup;
-      if (group) {
-        const isLeader = isMergeLeader(id, group);
-        div.textContent = isLeader ? (d.title || '') : '';
-        if (!d.title) div.classList.add('empty');
-      } else {
-        div.textContent = d.title || '';
-        if (!d.title) div.classList.add('empty');
-      }
-
-      applyMergeBorderClasses(div, id, r, c, rows, cols);
-
-      if (id === activeId) div.classList.add('active');
-
-      if (isGardenOwner) {
-        div.onclick = () => handleTileClick(id);
-      } else {
-        div.style.cursor = 'default';
-        // Read-only: clicking shows info only
-        div.onclick = () => showReadOnlyInfo(id);
-      }
-
-      garden.appendChild(div);
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const id  = tileId(r, c);
+    const d   = tilesData[id] || {};
+    const div = document.createElement('div');
+    div.className = 'tile';
+    div.dataset.id = id;
+    div.style.background = d.color || '#e8ffd6';
+    const group = d.mergeGroup;
+    if (group) {
+      div.textContent = isMergeLeader(id, group) ? (d.title || '') : '';
+    } else {
+      div.textContent = d.title || '';
     }
+    if (!d.title) div.classList.add('empty');
+    applyMergeBorderClasses(div, id, r, c, rows, cols);
+    if (id === activeId) div.classList.add('active');
+    if (isGardenOwner) {
+      div.onclick = () => handleTileClick(id);
+    } else {
+      div.style.cursor = 'default';
+      div.onclick = () => showReadOnlyInfo(id);
+    }
+    garden.appendChild(div);
   }
-
   if (mergeMode) applyMergeModeUI();
 }
 
 function isMergeLeader(id, group) {
   const members = Object.keys(tilesData).filter(k => tilesData[k].mergeGroup === group);
-  members.sort((a, b) => {
-    const ra = tileRC(a), rb = tileRC(b);
-    return ra.r !== rb.r ? ra.r - rb.r : ra.c - rb.c;
-  });
+  members.sort((a, b) => { const ra=tileRC(a),rb=tileRC(b); return ra.r!==rb.r?ra.r-rb.r:ra.c-rb.c; });
   return members[0] === id;
 }
 
 function applyMergeBorderClasses(div, id, r, c, rows, cols) {
-  const d = tilesData[id] || {};
-  const g = d.mergeGroup;
-  if (!g) return;
-  const top    = r > 0       ? (tilesData[tileId(r-1, c)] || {}) : {};
-  const bottom = r < rows-1  ? (tilesData[tileId(r+1, c)] || {}) : {};
-  const left   = c > 0       ? (tilesData[tileId(r, c-1)] || {}) : {};
-  const right  = c < cols-1  ? (tilesData[tileId(r, c+1)] || {}) : {};
-  if (top.mergeGroup    === g) div.classList.add('merge-top');
-  if (bottom.mergeGroup === g) div.classList.add('merge-bottom');
-  if (left.mergeGroup   === g) div.classList.add('merge-left');
-  if (right.mergeGroup  === g) div.classList.add('merge-right');
+  const g = (tilesData[id]||{}).mergeGroup; if (!g) return;
+  if (r>0      && (tilesData[tileId(r-1,c)]||{}).mergeGroup===g) div.classList.add('merge-top');
+  if (r<rows-1 && (tilesData[tileId(r+1,c)]||{}).mergeGroup===g) div.classList.add('merge-bottom');
+  if (c>0      && (tilesData[tileId(r,c-1)]||{}).mergeGroup===g) div.classList.add('merge-left');
+  if (c<cols-1 && (tilesData[tileId(r,c+1)]||{}).mergeGroup===g) div.classList.add('merge-right');
 }
 
 function showReadOnlyInfo(id) {
   const d = tilesData[id] || {};
   if (!d.title) return;
-  const panel = document.getElementById('defaultInfo');
-  panel.innerHTML = `
+  document.getElementById('defaultInfo').innerHTML = `
     <h2 style="font-family:'Schoolbell',cursive">${escHtml(d.title)}</h2>
     ${d.description ? `<p>${escHtml(d.description)}</p>` : ''}
-    ${d.imageUrl ? `<img src="${escHtml(d.imageUrl)}" style="width:100%;border-radius:0.5rem;margin-top:0.5rem;" />` : ''}
+    ${d.imageUrl ? `<img src="${escHtml(d.imageUrl)}" style="width:100%;border-radius:0.5rem;margin-top:0.5rem"/>` : ''}
   `;
   document.getElementById('editInfo').style.display  = 'none';
   document.getElementById('defaultInfo').style.display = 'block';
 }
 
 // ================================================================
-// OPEN PANEL / TILE CLICK
+// TILE PANEL
 // ================================================================
-const editInfo    = document.getElementById('editInfo');
-const defaultInfo = document.getElementById('defaultInfo');
-const titleInput  = document.getElementById('titleInput');
-const descInput   = document.getElementById('descInput');
-const imgInput    = document.getElementById('imgInput');
-const colorInput  = document.getElementById('colorInput');
-const splitBtn    = document.getElementById('splitBtn');
+const editInfo   = document.getElementById('editInfo');
+const defaultInfo= document.getElementById('defaultInfo');
+const titleInput = document.getElementById('titleInput');
+const descInput  = document.getElementById('descInput');
+const imgInput   = document.getElementById('imgInput');
+const colorInput = document.getElementById('colorInput');
+const splitBtn   = document.getElementById('splitBtn');
 
 function openPanel(id) {
   activeId = id;
   defaultInfo.style.display = 'none';
   editInfo.style.display    = 'block';
-
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
-  const { r, c } = tileRC(id);
-  const rows = currentGardenData.rows || 6;
-  const tiles = document.querySelectorAll('.tile');
-  if (tiles[r * (currentGardenData.cols || 6) + c])
-    tiles[r * (currentGardenData.cols || 6) + c].classList.add('active');
-
+  const {r,c} = tileRC(id);
+  const tiles  = document.querySelectorAll('.tile');
+  const cols   = currentGardenData.cols || 6;
+  if (tiles[r*cols+c]) tiles[r*cols+c].classList.add('active');
   const d = tilesData[id] || {};
-  titleInput.value  = d.title       || '';
-  descInput.value   = d.description || '';
-  imgInput.value    = d.imageUrl    || '';
-  colorInput.value  = d.color       || '#e8ffd6';
+  titleInput.value = d.title||''; descInput.value=d.description||'';
+  imgInput.value   = d.imageUrl||''; colorInput.value=d.color||'#e8ffd6';
   splitBtn.style.display = d.mergeGroup ? 'inline-block' : 'none';
 }
 
 function handleTileClick(id) {
-  if (mergeMode) {
-    toggleMergeSelection(id);
-  } else {
-    openPanel(id);
-  }
+  if (mergeMode) toggleMergeSelection(id); else openPanel(id);
 }
 
-// ================================================================
-// SAVE / CLEAR / EXIT / SPLIT
-// ================================================================
 function tilesRef() {
   return db.collection('gardens').doc(currentGardenId).collection('tiles');
 }
@@ -515,24 +520,17 @@ function tilesRef() {
 document.getElementById('saveBtn').onclick = async () => {
   if (!activeId) return;
   const d = tilesData[activeId] || {};
-  const payload = {
-    title:       titleInput.value.trim(),
-    description: descInput.value.trim(),
-    imageUrl:    imgInput.value.trim(),
-    color:       colorInput.value,
-    updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
-  };
+  const payload = { title: titleInput.value.trim(), description: descInput.value.trim(),
+    imageUrl: imgInput.value.trim(), color: colorInput.value,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
   if (d.mergeGroup) {
     const batch = db.batch();
     Object.keys(tilesData).forEach(k => {
-      if (tilesData[k].mergeGroup === d.mergeGroup)
+      if (tilesData[k].mergeGroup===d.mergeGroup)
         batch.set(tilesRef().doc(k), { ...payload, mergeGroup: d.mergeGroup });
     });
     await batch.commit();
-  } else {
-    await tilesRef().doc(activeId).set(payload);
-  }
-  // Update garden updatedAt
+  } else { await tilesRef().doc(activeId).set(payload); }
   db.collection('gardens').doc(currentGardenId).update({ updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
 };
 
@@ -542,23 +540,18 @@ document.getElementById('clearBtn').onclick = async () => {
   if (d.mergeGroup) {
     const batch = db.batch();
     Object.keys(tilesData).forEach(k => {
-      if (tilesData[k].mergeGroup === d.mergeGroup) batch.delete(tilesRef().doc(k));
+      if (tilesData[k].mergeGroup===d.mergeGroup) batch.delete(tilesRef().doc(k));
     });
     await batch.commit();
-  } else {
-    await tilesRef().doc(activeId).delete();
-  }
+  } else { await tilesRef().doc(activeId).delete(); }
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
   activeId = null;
-  editInfo.style.display  = 'none';
-  defaultInfo.style.display = 'block';
+  editInfo.style.display = 'none'; defaultInfo.style.display = 'block';
 };
 
 document.getElementById('exitBtn').onclick = () => {
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
-  activeId = null;
-  editInfo.style.display  = 'none';
-  defaultInfo.style.display = 'block';
+  activeId = null; editInfo.style.display='none'; defaultInfo.style.display='block';
 };
 
 document.getElementById('splitBtn').onclick = async () => {
@@ -567,7 +560,7 @@ document.getElementById('splitBtn').onclick = async () => {
   if (!d.mergeGroup) return;
   const batch = db.batch();
   Object.keys(tilesData).forEach(k => {
-    if (tilesData[k].mergeGroup === d.mergeGroup) {
+    if (tilesData[k].mergeGroup===d.mergeGroup) {
       const { mergeGroup, ...rest } = tilesData[k];
       batch.set(tilesRef().doc(k), { ...rest, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     }
@@ -591,54 +584,40 @@ const mergeCountSpan  = document.getElementById('mergeCount');
 mergeModeBtn.onclick = () => toggleMergeMode();
 
 function toggleMergeMode(on) {
-  mergeMode = (on !== undefined) ? on : !mergeMode;
+  mergeMode = on !== undefined ? on : !mergeMode;
   mergeSelected.clear();
-
   document.body.classList.toggle('merge-mode', mergeMode);
   mergeModeBtn.classList.toggle('active', mergeMode);
-  mergeModeBtn.textContent = mergeMode ? '✕ Cancel Merge' : '⊞ Merge Tiles';
-
+  mergeModeBtn.textContent = mergeMode ? '✕ Cancel' : '⊞ Merge';
   if (mergeMode) {
-    editInfo.style.display  = 'none';
-    defaultInfo.style.display = 'block';
-    document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
+    editInfo.style.display='none'; defaultInfo.style.display='block';
+    document.querySelectorAll('.tile').forEach(t=>t.classList.remove('active'));
     activeId = null;
     mergeToolbar.classList.add('visible');
-    updateMergeToolbar();
-    applyMergeModeUI();
+    updateMergeToolbar(); applyMergeModeUI();
   } else {
     mergeToolbar.classList.remove('visible');
-    document.querySelectorAll('.tile').forEach(t =>
-      t.classList.remove('merge-selected', 'merge-eligible', 'merge-ineligible'));
+    document.querySelectorAll('.tile').forEach(t=>
+      t.classList.remove('merge-selected','merge-eligible','merge-ineligible'));
   }
 }
 
 function getEligibleIds() {
-  const rows = currentGardenData.rows || 6;
-  const cols = currentGardenData.cols || 6;
+  const rows = currentGardenData.rows||6, cols = currentGardenData.cols||6;
   let lockedGroup = null;
-  mergeSelected.forEach(id => {
-    const g = (tilesData[id] || {}).mergeGroup;
-    if (g) lockedGroup = g;
-  });
+  mergeSelected.forEach(id => { const g=(tilesData[id]||{}).mergeGroup; if(g) lockedGroup=g; });
   const eligible = new Set();
-  if (mergeSelected.size === 0) {
-    for (let r = 0; r < rows; r++)
-      for (let c = 0; c < cols; c++)
-        eligible.add(tileId(r, c));
+  if (mergeSelected.size===0) {
+    for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) eligible.add(tileId(r,c));
   } else {
     mergeSelected.forEach(id => {
-      const { r, c } = tileRC(id);
-      const neighbours = [];
-      if (r > 0)       neighbours.push(tileId(r-1, c));
-      if (r < rows-1)  neighbours.push(tileId(r+1, c));
-      if (c > 0)       neighbours.push(tileId(r, c-1));
-      if (c < cols-1)  neighbours.push(tileId(r, c+1));
-      neighbours.forEach(n => { if (!mergeSelected.has(n)) eligible.add(n); });
+      const {r,c}=tileRC(id);
+      [r>0&&tileId(r-1,c),r<rows-1&&tileId(r+1,c),c>0&&tileId(r,c-1),c<cols-1&&tileId(r,c+1)]
+        .filter(Boolean).forEach(n=>{ if(!mergeSelected.has(n)) eligible.add(n); });
     });
     eligible.forEach(id => {
-      const g = (tilesData[id] || {}).mergeGroup;
-      if (g && lockedGroup && g !== lockedGroup) eligible.delete(id);
+      const g=(tilesData[id]||{}).mergeGroup;
+      if (g && lockedGroup && g!==lockedGroup) eligible.delete(id);
     });
   }
   return eligible;
@@ -648,84 +627,288 @@ function applyMergeModeUI() {
   const eligible = getEligibleIds();
   document.querySelectorAll('.tile').forEach(div => {
     const id = div.dataset.id;
-    div.classList.remove('merge-selected', 'merge-eligible', 'merge-ineligible');
-    if (mergeSelected.has(id))      div.classList.add('merge-selected');
-    else if (eligible.has(id))      div.classList.add('merge-eligible');
-    else                            div.classList.add('merge-ineligible');
+    div.classList.remove('merge-selected','merge-eligible','merge-ineligible');
+    if (mergeSelected.has(id))   div.classList.add('merge-selected');
+    else if (eligible.has(id))   div.classList.add('merge-eligible');
+    else                         div.classList.add('merge-ineligible');
   });
 }
 
 function toggleMergeSelection(id) {
   if (mergeSelected.has(id)) {
     mergeSelected.delete(id);
-    if (mergeSelected.size > 0 && !isConnected(mergeSelected)) mergeSelected.add(id);
+    if (mergeSelected.size>0 && !isConnected(mergeSelected)) mergeSelected.add(id);
   } else {
-    const eligible = getEligibleIds();
-    if (!eligible.has(id)) return;
+    if (!getEligibleIds().has(id)) return;
     mergeSelected.add(id);
   }
-  applyMergeModeUI();
-  updateMergeToolbar();
+  applyMergeModeUI(); updateMergeToolbar();
 }
 
 function isConnected(ids) {
-  if (ids.size <= 1) return true;
-  const arr = [...ids];
-  const visited = new Set();
-  const rows = currentGardenData.rows || 6;
-  const cols = currentGardenData.cols || 6;
-  const queue = [arr[0]]; visited.add(arr[0]);
+  if (ids.size<=1) return true;
+  const rows=currentGardenData.rows||6, cols=currentGardenData.cols||6;
+  const arr=[...ids], visited=new Set(), queue=[arr[0]]; visited.add(arr[0]);
   while (queue.length) {
-    const cur = queue.shift();
-    const { r, c } = tileRC(cur);
-    const neighbours = [];
-    if (r > 0)       neighbours.push(tileId(r-1, c));
-    if (r < rows-1)  neighbours.push(tileId(r+1, c));
-    if (c > 0)       neighbours.push(tileId(r, c-1));
-    if (c < cols-1)  neighbours.push(tileId(r, c+1));
-    neighbours.forEach(n => { if (ids.has(n) && !visited.has(n)) { visited.add(n); queue.push(n); } });
+    const cur=queue.shift(), {r,c}=tileRC(cur);
+    [r>0&&tileId(r-1,c),r<rows-1&&tileId(r+1,c),c>0&&tileId(r,c-1),c<cols-1&&tileId(r,c+1)]
+      .filter(Boolean).forEach(n=>{ if(ids.has(n)&&!visited.has(n)){visited.add(n);queue.push(n);} });
   }
-  return visited.size === ids.size;
+  return visited.size===ids.size;
 }
 
 function updateMergeToolbar() {
   const n = mergeSelected.size;
-  mergeCountSpan.textContent = n === 0
-    ? 'Tap tiles to select'
-    : `${n} tile${n > 1 ? 's' : ''} selected`;
-  mergeConfirmBtn.disabled = n < 2;
+  mergeCountSpan.textContent = n===0 ? 'Tap tiles to select' : `${n} tile${n>1?'s':''} selected`;
+  mergeConfirmBtn.disabled = n<2;
 }
 
 mergeConfirmBtn.onclick = async () => {
-  if (mergeSelected.size < 2) return;
-  let group = null;
-  mergeSelected.forEach(id => {
-    const g = (tilesData[id] || {}).mergeGroup;
-    if (g) group = g;
-  });
+  if (mergeSelected.size<2) return;
+  let group=null;
+  mergeSelected.forEach(id=>{ const g=(tilesData[id]||{}).mergeGroup; if(g) group=g; });
   if (!group) group = crypto.randomUUID();
-  const sortedIds = [...mergeSelected].sort((a, b) => {
-    const ra = tileRC(a), rb = tileRC(b);
-    return ra.r !== rb.r ? ra.r - rb.r : ra.c - rb.c;
-  });
-  const leaderData = tilesData[sortedIds[0]] || {};
-  const batch = db.batch();
-  mergeSelected.forEach(id => {
-    const existing = tilesData[id] || {};
-    batch.set(tilesRef().doc(id), {
-      title:       leaderData.title       || existing.title       || '',
-      description: leaderData.description || existing.description || '',
-      imageUrl:    leaderData.imageUrl    || existing.imageUrl    || '',
-      color:       leaderData.color       || existing.color       || '#e8ffd6',
-      mergeGroup:  group,
-      updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
+  const sorted=[...mergeSelected].sort((a,b)=>{ const ra=tileRC(a),rb=tileRC(b); return ra.r!==rb.r?ra.r-rb.r:ra.c-rb.c; });
+  const leaderData=tilesData[sorted[0]]||{};
+  const batch=db.batch();
+  mergeSelected.forEach(id=>{
+    const ex=tilesData[id]||{};
+    batch.set(tilesRef().doc(id),{
+      title:leaderData.title||ex.title||'', description:leaderData.description||ex.description||'',
+      imageUrl:leaderData.imageUrl||ex.imageUrl||'', color:leaderData.color||ex.color||'#e8ffd6',
+      mergeGroup:group, updatedAt:firebase.firestore.FieldValue.serverTimestamp()
     });
   });
   await batch.commit();
   toggleMergeMode(false);
 };
-
 mergeCancelBtn.onclick = () => toggleMergeMode(false);
+
+// ================================================================
+// COMMUNITY FEED
+// ================================================================
+let pendingImageUrl = '';
+let pendingTaggedGardens = []; // [{id, name}]
+
+const submitPostBtn  = document.getElementById('submitPostBtn');
+const postTextInput  = document.getElementById('postTextInput');
+const addImgBtn      = document.getElementById('addImgBtn');
+const imgUrlInput    = document.getElementById('imgUrlInput');
+const composeImgPreview = document.getElementById('composeImgPreview');
+const composeImgThumb   = document.getElementById('composeImgThumb');
+const removeImgBtn   = document.getElementById('removeImgBtn');
+const tagGardenBtn   = document.getElementById('tagGardenBtn');
+const composeTagsEl  = document.getElementById('composeTags');
+const feedEl         = document.getElementById('community-feed');
+const feedEmpty      = document.getElementById('feed-empty');
+
+// Image URL input toggle
+addImgBtn.onclick = () => {
+  const visible = imgUrlInput.style.display === 'block';
+  imgUrlInput.style.display = visible ? 'none' : 'block';
+  if (!visible) imgUrlInput.focus();
+};
+
+imgUrlInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const url = imgUrlInput.value.trim();
+    if (url) {
+      pendingImageUrl = url;
+      composeImgThumb.src = url;
+      composeImgPreview.style.display = 'flex';
+      imgUrlInput.value = '';
+      imgUrlInput.style.display = 'none';
+    }
+  }
+});
+
+removeImgBtn.onclick = () => {
+  pendingImageUrl = '';
+  composeImgThumb.src = '';
+  composeImgPreview.style.display = 'none';
+};
+
+// Tag garden picker
+tagGardenBtn.onclick = () => {
+  // Populate picker with user's public gardens
+  const list = document.getElementById('tag-picker-list');
+  list.innerHTML = '<p style="color:#888;font-size:0.9rem">Loading…</p>';
+  document.getElementById('tag-picker-overlay').classList.add('open');
+  db.collection('gardens').where('ownerId','==',currentUser.uid).get().then(snap => {
+    list.innerHTML = '';
+    if (snap.empty) {
+      list.innerHTML = '<p style="color:#888;font-size:0.9rem">You have no gardens to tag.</p>';
+      return;
+    }
+    snap.forEach(doc => {
+      const d = doc.data();
+      const already = pendingTaggedGardens.find(g => g.id === doc.id);
+      const btn = document.createElement('button');
+      btn.className = 'tag-picker-item' + (already ? ' selected' : '');
+      btn.textContent = d.name || 'Unnamed';
+      btn.onclick = () => {
+        if (already) {
+          pendingTaggedGardens = pendingTaggedGardens.filter(g => g.id !== doc.id);
+        } else {
+          pendingTaggedGardens.push({ id: doc.id, name: d.name || 'Unnamed' });
+        }
+        renderComposeTags();
+        document.getElementById('tag-picker-overlay').classList.remove('open');
+      };
+      list.appendChild(btn);
+    });
+  });
+};
+
+document.getElementById('tagPickerCloseBtn').onclick = () =>
+  document.getElementById('tag-picker-overlay').classList.remove('open');
+document.getElementById('tag-picker-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('tag-picker-overlay'))
+    document.getElementById('tag-picker-overlay').classList.remove('open');
+});
+
+function renderComposeTags() {
+  composeTagsEl.innerHTML = '';
+  pendingTaggedGardens.forEach(g => {
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip';
+    chip.innerHTML = `🌿 ${escHtml(g.name)} <button class="chip-remove" data-id="${g.id}">✕</button>`;
+    chip.querySelector('.chip-remove').onclick = (e) => {
+      e.stopPropagation();
+      pendingTaggedGardens = pendingTaggedGardens.filter(x => x.id !== g.id);
+      renderComposeTags();
+    };
+    composeTagsEl.appendChild(chip);
+  });
+}
+
+// Submit post
+submitPostBtn.onclick = async () => {
+  const text = postTextInput.value.trim();
+  if (!text && !pendingImageUrl) return;
+
+  await db.collection('posts').add({
+    authorId:   currentUser.uid,
+    authorName: currentUser.displayName || currentUser.email,
+    authorPhoto:currentUser.photoURL || '',
+    text,
+    imageUrl:   pendingImageUrl,
+    taggedGardens: pendingTaggedGardens,
+    createdAt:  firebase.firestore.FieldValue.serverTimestamp(),
+    likes:      []
+  });
+
+  postTextInput.value = '';
+  pendingImageUrl = '';
+  pendingTaggedGardens = [];
+  composeImgPreview.style.display = 'none';
+  composeImgThumb.src = '';
+  imgUrlInput.style.display = 'none';
+  renderComposeTags();
+};
+
+function loadFeed() {
+  feedEl.innerHTML = '';
+  db.collection('posts').orderBy('createdAt','desc').limit(50)
+    .onSnapshot(snap => {
+      feedEl.innerHTML = '';
+      if (snap.empty) { feedEmpty.style.display = 'block'; return; }
+      feedEmpty.style.display = 'none';
+      snap.forEach(doc => feedEl.appendChild(buildPostCard(doc.id, doc.data())));
+    });
+}
+
+function buildPostCard(postId, data) {
+  const card = document.createElement('div');
+  card.className = 'post-card';
+
+  const isOwn = currentUser && data.authorId === currentUser.uid;
+  const liked = (data.likes||[]).includes(currentUser?.uid);
+  const likeCount = (data.likes||[]).length;
+
+  const initials = (data.authorName||'?')[0].toUpperCase();
+  const avatarHtml = data.authorPhoto
+    ? `<img src="${escHtml(data.authorPhoto)}" class="post-avatar-img" alt="" />`
+    : `<div class="post-avatar-initials">${initials}</div>`;
+
+  const imgHtml = data.imageUrl
+    ? `<img src="${escHtml(data.imageUrl)}" class="post-image" alt="" onerror="this.style.display='none'" />`
+    : '';
+
+  const tagsHtml = (data.taggedGardens||[]).length
+    ? `<div class="post-tags">${data.taggedGardens.map(g =>
+        `<span class="post-tag-chip" data-garden-id="${escHtml(g.id)}">🌿 ${escHtml(g.name)}</span>`
+      ).join('')}</div>`
+    : '';
+
+  const timeStr = data.createdAt?.toDate
+    ? timeAgo(data.createdAt.toDate()) : 'just now';
+
+  const deleteBtn = isOwn
+    ? `<button class="post-delete-btn" data-id="${postId}">🗑</button>` : '';
+
+  card.innerHTML = `
+    <div class="post-header">
+      <div class="post-avatar">${avatarHtml}</div>
+      <div class="post-meta">
+        <span class="post-author">${escHtml(data.authorName||'Unknown')}</span>
+        <span class="post-time">${timeStr}</span>
+      </div>
+      ${deleteBtn}
+    </div>
+    ${data.text ? `<p class="post-text">${escHtml(data.text)}</p>` : ''}
+    ${imgHtml}
+    ${tagsHtml}
+    <div class="post-actions">
+      <button class="like-btn ${liked?'liked':''}" data-id="${postId}">
+        ${liked ? '❤' : '🤍'} <span>${likeCount}</span>
+      </button>
+    </div>
+  `;
+
+  // Like
+  card.querySelector('.like-btn').onclick = async () => {
+    const ref = db.collection('posts').doc(postId);
+    const uid = currentUser.uid;
+    if (liked) {
+      await ref.update({ likes: firebase.firestore.FieldValue.arrayRemove(uid) });
+    } else {
+      await ref.update({ likes: firebase.firestore.FieldValue.arrayUnion(uid) });
+    }
+  };
+
+  // Delete
+  const delBtn = card.querySelector('.post-delete-btn');
+  if (delBtn) {
+    delBtn.onclick = async () => {
+      if (!confirm('Delete this post?')) return;
+      await db.collection('posts').doc(postId).delete();
+    };
+  }
+
+  // Tagged garden chips → navigate to garden
+  card.querySelectorAll('.post-tag-chip').forEach(chip => {
+    chip.onclick = async () => {
+      const gardenId = chip.dataset.gardenId;
+      const doc = await db.collection('gardens').doc(gardenId).get();
+      if (doc.exists) {
+        const isOwn = currentUser && doc.data().ownerId === currentUser.uid;
+        const isCollab = doc.data().collaboratorEmails?.includes(currentUser?.email);
+        openGarden(doc.id, doc.data(), isOwn || isCollab);
+      }
+    };
+  });
+
+  return card;
+}
+
+function timeAgo(date) {
+  const diff = Math.floor((Date.now() - date) / 1000);
+  if (diff < 60)  return 'just now';
+  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
+}
 
 // ================================================================
 // MOBILE MODAL BRIDGE
@@ -743,52 +926,31 @@ mergeCancelBtn.onclick = () => toggleMergeMode(false);
 
   function closeModal() {
     overlay.classList.add('closing');
-    setTimeout(() => {
-      overlay.classList.remove('open', 'closing');
-    }, 180);
+    setTimeout(() => overlay.classList.remove('open','closing'), 180);
   }
 
-  const _origOpen = openPanel;
-  window.openPanel = function (id) {
-    _origOpen(id);
+  const _orig = openPanel;
+  window.openPanel = function(id) {
+    _orig(id);
     if (!isMobile()) return;
-
     const d = tilesData[id] || {};
     mTitle.textContent = d.title || 'Empty Plot';
-    mTitleInput.value  = d.title       || '';
-    mDesc.value        = d.description || '';
-    mImg.value         = d.imageUrl    || '';
-    mColor.value       = d.color       || '#e8ffd6';
+    mTitleInput.value  = d.title||''; mDesc.value=d.description||'';
+    mImg.value=d.imageUrl||''; mColor.value=d.color||'#e8ffd6';
     if (mSplitBtn) mSplitBtn.style.display = d.mergeGroup ? 'inline-block' : 'none';
     overlay.classList.add('open');
   };
 
-  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+  overlay.addEventListener('click', e => { if (e.target===overlay) closeModal(); });
 
-  document.getElementById('modal-saveBtn').onclick = async function () {
+  document.getElementById('modal-saveBtn').onclick = async () => {
     if (!activeId) return;
-    titleInput.value = mTitleInput.value;
-    descInput.value  = mDesc.value;
-    imgInput.value   = mImg.value;
-    colorInput.value = mColor.value;
+    titleInput.value=mTitleInput.value; descInput.value=mDesc.value;
+    imgInput.value=mImg.value; colorInput.value=mColor.value;
     document.getElementById('saveBtn').click();
     closeModal();
   };
-
-  document.getElementById('modal-clearBtn').onclick = function () {
-    document.getElementById('clearBtn').click();
-    closeModal();
-  };
-
-  document.getElementById('modal-exitBtn').onclick = function () {
-    document.getElementById('exitBtn').click();
-    closeModal();
-  };
-
-  if (mSplitBtn) {
-    mSplitBtn.onclick = function () {
-      document.getElementById('splitBtn').click();
-      closeModal();
-    };
-  }
+  document.getElementById('modal-clearBtn').onclick = () => { document.getElementById('clearBtn').click(); closeModal(); };
+  document.getElementById('modal-exitBtn').onclick  = () => { document.getElementById('exitBtn').click();  closeModal(); };
+  if (mSplitBtn) mSplitBtn.onclick = () => { document.getElementById('splitBtn').click(); closeModal(); };
 })();
