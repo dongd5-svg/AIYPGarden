@@ -236,18 +236,24 @@ function loadPostComments(postId, postAuthorId) {
   submit.onclick = doSubmit;
   input.addEventListener('keydown', e => { if (e.key === 'Enter') doSubmit(); });
 
-  // Real-time listener for comments
+  // Real-time listener for comments — no orderBy to avoid index requirement,
+  // sort client-side instead
   const unsub = db.collection('posts').doc(postId)
     .collection('comments')
-    .orderBy('createdAt', 'asc')
     .onSnapshot(snap => {
       const list = document.getElementById(`comment-list-${postId}`);
       if (!list) return;
       list.innerHTML = '';
 
-      const allDocs   = snap.docs;
-      const topLevel  = allDocs.filter(d => !d.data().parentId);
-      const replies   = allDocs.filter(d =>  d.data().parentId);
+      // Sort by createdAt client-side
+      const allDocs = snap.docs.slice().sort((a, b) => {
+        const ta = a.data().createdAt?.toMillis?.() || 0;
+        const tb = b.data().createdAt?.toMillis?.() || 0;
+        return ta - tb;
+      });
+
+      const topLevel = allDocs.filter(d => !d.data().parentId);
+      const replies  = allDocs.filter(d =>  d.data().parentId);
 
       if (topLevel.length === 0) {
         list.innerHTML = '<p style="color:#aaa;font-size:0.82rem;margin:0.3rem 0">No comments yet — be the first!</p>';
@@ -265,6 +271,10 @@ function loadPostComments(postId, postAuthorId) {
           list.appendChild(replyWrap);
         }
       });
+    }, err => {
+      console.error('Comments error:', err.message);
+      const list = document.getElementById(`comment-list-${postId}`);
+      if (list) list.innerHTML = `<p style="color:#c0392b;font-size:0.82rem">Could not load comments: ${err.message}</p>`;
     });
 
   commentListeners[postId] = unsub;

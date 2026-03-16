@@ -286,33 +286,41 @@ async function renderUserProfile(uid, container, isOwn) {
 
 // ── Follow / unfollow ─────────────────────────────────────────────
 async function toggleFollow(targetUid, btn) {
-  const myRef     = db.collection('users').doc(currentUser.uid);
-  const targetRef = db.collection('users').doc(targetUid);
-  const mySnap    = await myRef.get();
-  const following = mySnap.data()?.following || [];
+  btn.disabled = true;
+  try {
+    const myRef     = db.collection('users').doc(currentUser.uid);
+    const targetRef = db.collection('users').doc(targetUid);
+    const mySnap    = await myRef.get();
+    const following = mySnap.data()?.following || [];
 
-  if (following.includes(targetUid)) {
-    // Unfollow
-    await myRef.update({
-      following: firebase.firestore.FieldValue.arrayRemove(targetUid)
-    });
-    await targetRef.update({
-      followers: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
-    });
-    btn.textContent = 'Follow';
-    btn.classList.remove('following');
-    showToast('Unfollowed');
-  } else {
-    // Follow
-    await myRef.update({
-      following: firebase.firestore.FieldValue.arrayUnion(targetUid)
-    });
-    await targetRef.update({
-      followers: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
-    });
-    btn.textContent = 'Following';
-    btn.classList.add('following');
-    showToast('Following! 🌱');
-    await sendNotification(targetUid, 'follow');
+    if (following.includes(targetUid)) {
+      // Unfollow — update both docs
+      await myRef.update({
+        following: firebase.firestore.FieldValue.arrayRemove(targetUid)
+      });
+      await targetRef.update({
+        followers: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+      });
+      btn.textContent = 'Follow';
+      btn.classList.remove('following');
+      showToast('Unfollowed');
+    } else {
+      // Follow — update both docs
+      await myRef.update({
+        following: firebase.firestore.FieldValue.arrayUnion(targetUid)
+      });
+      await targetRef.update({
+        followers: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+      });
+      btn.textContent = 'Following';
+      btn.classList.add('following');
+      showToast('Following! 🌱');
+      sendNotification(targetUid, 'follow');
+    }
+  } catch(err) {
+    console.error('Follow error:', err.message);
+    showToast('Could not follow — check permissions', 'error');
+  } finally {
+    btn.disabled = false;
   }
 }

@@ -119,55 +119,72 @@ function openConversation(convId, otherId, otherName, otherPhoto) {
       if (!container) return;
       container.innerHTML = '';
 
+      // Mark last incoming message as seen
+      if (snap.size > 0) {
+        const lastDoc = snap.docs[snap.size - 1];
+        if (lastDoc.data().senderId !== currentUser.uid) {
+          db.collection('conversations').doc(convId)
+            .collection('messages').doc(lastDoc.id)
+            .update({ seenBy: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) })
+            .catch(() => {});
+        }
+      }
+
       snap.forEach((doc, i) => {
-        const m    = doc.data();
-        const mine = m.senderId === currentUser.uid;
+        const m      = doc.data();
+        const mine   = m.senderId === currentUser.uid;
         const isLast = i === snap.size - 1;
 
         const wrap = document.createElement('div');
         wrap.className = `dm-msg ${mine ? 'mine' : 'theirs'}`;
 
+        // Bubble
         const bubble = document.createElement('div');
         bubble.className = 'dm-msg-bubble';
-
         if (m.imageUrl) {
           bubble.innerHTML = `
-            ${m.text ? escHtml(m.text) : ''}
-            <img src="${escHtml(m.imageUrl)}" class="dm-msg-image"
-              onerror="this.style.display='none'" />
+            ${m.text ? `<span>${escHtml(m.text)}</span><br>` : ''}
+            <img src="${escHtml(m.imageUrl)}" class="dm-msg-image" onerror="this.style.display='none'" />
           `;
         } else {
           bubble.textContent = m.text;
         }
-
         wrap.appendChild(bubble);
 
+        // Reactions display
+        const reactions = m.reactions || {};
+        const reactEmojis = Object.keys(reactions).filter(e => (reactions[e]||[]).length > 0);
+        if (reactEmojis.length > 0) {
+          const reactRow = document.createElement('div');
+          reactRow.className = 'dm-reactions';
+          reactEmojis.forEach(emoji => {
+            const users = reactions[emoji] || [];
+            const pill = document.createElement('button');
+            pill.className = 'dm-reaction-pill' + (users.includes(currentUser.uid) ? ' reacted' : '');
+            pill.textContent = emoji + ' ' + users.length;
+            pill.onclick = () => toggleReaction(convId, doc.id, emoji, users.includes(currentUser.uid));
+            reactRow.appendChild(pill);
+          });
+          wrap.appendChild(reactRow);
+        }
+
+        // Hover react button
+        const reactBtn = document.createElement('button');
+        reactBtn.className = 'dm-react-btn';
+        reactBtn.textContent = '😊';
+        reactBtn.onclick = e => { e.stopPropagation(); openReactionPicker(convId, doc.id, wrap); };
+        wrap.appendChild(reactBtn);
+
+        // Time + read receipt
         const meta = document.createElement('div');
         meta.className = 'dm-msg-meta';
-        meta.textContent = m.createdAt?.toDate ? timeAgo(m.createdAt.toDate()) : '';
+        const timeStr = m.createdAt?.toDate ? timeAgo(m.createdAt.toDate()) : '';
+        const seenStr = (mine && isLast && (m.seenBy||[]).includes(otherId)) ? ' · Seen ✓' : '';
+        meta.textContent = timeStr + seenStr;
         wrap.appendChild(meta);
-
-        // Seen receipt on last sent message
-        if (mine && isLast && m.seenBy?.includes(otherId)) {
-          const seen = document.createElement('div');
-          seen.className = 'dm-msg-seen';
-          seen.textContent = 'Seen';
-          wrap.appendChild(seen);
-        }
 
         container.appendChild(wrap);
       });
-
-      // Mark messages as seen by current user
-      if (snap.size > 0) {
-        const lastMsg = snap.docs[snap.size - 1];
-        if (lastMsg.data().senderId !== currentUser.uid) {
-          db.collection('conversations').doc(convId)
-            .collection('messages').doc(lastMsg.id)
-            .update({ seenBy: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) })
-            .catch(() => {});
-        }
-      }
 
       // Scroll to bottom
       container.scrollTop = container.scrollHeight;
@@ -309,3 +326,43 @@ document.getElementById('new-dm-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('new-dm-overlay'))
     document.getElementById('new-dm-overlay').classList.remove('open');
 });
+
+// ── Reactions ─────────────────────────────────────────────────────
+const REACTION_EMOJIS = ['❤️','😂','😮','😢','👍','👎','🌱','🔥'];
+
+function openReactionPicker(convId, msgId, wrapEl) {
+  // Remove any existing picker
+  document.querySelectorAll('.reaction-picker-popup').forEach(p => p.remove());
+
+  const picker = document.createElement('div');
+  picker.className = 'reaction-picker-popup';
+  REACTION_EMOJIS.forEach(emoji => {
+    const btn = document.createElement('button');
+    btn.className = 'reaction-pick-btn';
+    btn.textContent = emoji;
+    btn.onclick = () => {
+      toggleReaction(convId, msgId, emoji, false);
+      picker.remove();
+    };
+    picker.appendChild(btn);
+  });
+
+  wrapEl.style.position = 'relative';
+  wrapEl.appendChild(picker);
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', () => picker.remove(), { once: true });
+  }, 50);
+}
+
+async function toggleReaction(convId, msgId, emoji, alreadyReacted) {
+  const ref = db.collection('conversations').doc(convId)
+    .collection('messages').doc(msgId);
+  const field = `reactions.${emoji}`;
+  if (alreadyReacted) {
+    await ref.update({ [field]: firebase.firestore.FieldValue.arrayRemove(currentUser.uid) });
+  } else {
+    await ref.update({ [field]: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) });
+  }
+}
