@@ -168,7 +168,7 @@ let sharedGardensUnsubscribe = null;
 
 function loadMyGardens() {
   if (myGardensUnsubscribe)    myGardensUnsubscribe();
-  if (sharedGardensUnsubscribe) sharedGardensUnsubscribe();
+  if (sharedGardensUnsubscribe) clearInterval(sharedGardensUnsubscribe);
 
   // ── Owned gardens ──────────────────────────────────────────
   const renderOwned = (snap) => {
@@ -205,13 +205,21 @@ function loadMyGardens() {
     }
   };
 
-  sharedGardensUnsubscribe = db.collection('gardens')
-    .where('collaboratorEmails', 'array-contains', currentUser.email)
-    .onSnapshot(renderShared, (err) => {
-      console.error('Shared gardens error:', err.message);
-      // Silently hide section if query fails
-      sharedSection.style.display = 'none';
-    });
+  // Use get() instead of onSnapshot — array-contains queries
+  // require a composite index for real-time listeners
+  const loadShared = () => {
+    db.collection('gardens')
+      .where('collaboratorEmails', 'array-contains', currentUser.email)
+      .get()
+      .then(renderShared)
+      .catch(err => {
+        console.error('Shared gardens error:', err.message);
+        sharedSection.style.display = 'none';
+      });
+  };
+  loadShared();
+  // Refresh shared gardens every 30s to pick up new shares
+  sharedGardensUnsubscribe = setInterval(loadShared, 30000);
 }
 
 // ================================================================
