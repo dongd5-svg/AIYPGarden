@@ -92,11 +92,14 @@
           <img id="composeImgThumb" src="" alt="" />
           <button class="remove-img-btn" id="removeImgBtn">✕</button>
         </div>
-        <input id="imgUrlInput" type="text" placeholder="Paste an image URL and press Enter…" class="img-url-input" style="display:none" />
+        <div id="postUploadProgress" class="upload-progress" style="display:none">
+          <div class="upload-progress-bar" id="postUploadBar"></div>
+          <span id="postUploadLabel">Uploading...</span>
+        </div>
         <div class="compose-actions">
           <div class="compose-left">
-            <button class="compose-icon-btn" id="addImgBtn" title="Add image">🖼</button>
-            <button class="compose-icon-btn" id="tagGardenBtn" title="Tag a garden">🌿 Tag garden</button>
+            <button class="compose-icon-btn" id="addImgBtn">📷 Photo</button>
+            <button class="compose-icon-btn" id="tagGardenBtn">🌿 Tag garden</button>
           </div>
           <div class="compose-tags" id="composeTags"></div>
           <button class="btn-post" id="submitPostBtn">Post</button>
@@ -145,11 +148,18 @@
             </div>
             <div class="field">
               <label for="descInput">Description</label>
-              <textarea id="descInput" rows="5" placeholder="Notes about this plot"></textarea>
+              <textarea id="descInput" rows="4" placeholder="Notes about this plot"></textarea>
             </div>
             <div class="field">
-              <label for="imgInput">Image URL (optional)</label>
-              <input id="imgInput" type="text" placeholder="https://..." />
+              <label>Image</label>
+              <div class="upload-row">
+                <button class="upload-btn" id="tileUploadBtn" type="button">📷 Upload photo</button>
+                <span id="tileUploadLabel" style="display:none;font-size:0.82rem;color:#4a7c3f;"></span>
+              </div>
+              <div id="tileUploadProgress" class="upload-progress" style="display:none">
+                <div class="upload-progress-bar" id="tileUploadBar"></div>
+              </div>
+              <input id="imgInput" type="text" placeholder="or paste a URL…" style="margin-top:0.5rem" />
             </div>
             <div class="field">
               <label for="colorInput">Tile color</label>
@@ -230,7 +240,6 @@
     <button class="modal-close-btn" id="settingsModalCloseBtn">✕</button>
     <h2>⚙ Garden Settings</h2>
     <p class="create-modal-sub" id="settingsGardenName"></p>
-
     <div class="field">
       <label>Visibility</label>
       <div class="visibility-toggle">
@@ -238,7 +247,6 @@
         <button class="vis-btn" id="settingsVisPublic">🌍 Public</button>
       </div>
     </div>
-
     <div class="field">
       <label>Collaborators</label>
       <p class="field-hint">Add people by email — they can view and edit this garden even if it's private.</p>
@@ -248,9 +256,7 @@
       </div>
       <div id="collabList" class="collab-list"></div>
     </div>
-
     <div class="settings-divider"></div>
-
     <div class="danger-zone">
       <p class="danger-label">⚠ Danger Zone</p>
       <button class="btn-danger" id="deleteGardenBtn">🗑 Delete this garden permanently</button>
@@ -263,7 +269,7 @@
   <div id="tag-picker">
     <button class="modal-close-btn" id="tagPickerCloseBtn">✕</button>
     <h2>Tag a garden</h2>
-    <p class="create-modal-sub">Pick from your public gardens</p>
+    <p class="create-modal-sub">Pick from your gardens</p>
     <div id="tag-picker-list"></div>
   </div>
 </div>
@@ -282,8 +288,12 @@
       <textarea id="modal-descInput" rows="4" placeholder="Notes about this plot"></textarea>
     </div>
     <div class="field">
-      <label for="modal-imgInput">Image URL (optional)</label>
-      <input id="modal-imgInput" type="text" placeholder="https://..." />
+      <label>Image</label>
+      <div class="upload-row">
+        <button class="upload-btn" id="modal-tileUploadBtn" type="button">📷 Upload photo</button>
+        <span id="modalTileUploadLabel" style="display:none;font-size:0.82rem;color:#4a7c3f;"></span>
+      </div>
+      <input id="modal-imgInput" type="text" placeholder="or paste a URL…" style="margin-top:0.5rem" />
     </div>
     <div class="field">
       <label for="modal-colorInput">Tile color</label>
@@ -298,9 +308,11 @@
   </div>
 </div>
 
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script>
   firebase.initializeApp({
     apiKey: "AIzaSyDFVgPG-oauNpgmkXWK0Wvj6z4PmyqWNY0",

@@ -4,6 +4,7 @@
 const auth     = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 const db       = firebase.firestore();
+const storage  = firebase.storage();
 
 const loginGate       = document.getElementById('loginGate');
 const appShell        = document.getElementById('app');
@@ -23,12 +24,11 @@ auth.onAuthStateChanged(user => {
     appShell.style.display  = 'block';
     userNameDisplay.textContent = user.displayName || user.email;
     if (user.photoURL) document.getElementById('profileImg').src = user.photoURL;
-    // Set compose avatar initials
     const av = document.getElementById('composeAvatar');
     if (av) {
       if (user.photoURL) {
         av.style.backgroundImage = `url(${user.photoURL})`;
-        av.style.backgroundSize = 'cover';
+        av.style.backgroundSize  = 'cover';
         av.textContent = '';
       } else {
         av.textContent = (user.displayName || user.email || '?')[0].toUpperCase();
@@ -43,6 +43,92 @@ auth.onAuthStateChanged(user => {
 });
 
 // ================================================================
+// IMAGE UPLOAD HELPERS
+// ================================================================
+
+/**
+ * Opens a file picker, uploads to Firebase Storage, returns download URL.
+ * Shows progress in the given bar + label elements.
+ */
+function uploadImage({ path, barEl, labelEl }) {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('input');
+    input.type   = 'file';
+    input.accept = 'image/*';
+    input.onchange = () => {
+      const file = input.files[0];
+      if (!file) return reject(new Error('cancelled'));
+      const ext      = file.name.split('.').pop();
+      const filename = `${Date.now()}.${ext}`;
+      const ref      = storage.ref(`${path}/${filename}`);
+      const task     = ref.put(file);
+
+      if (barEl)   { barEl.parentElement.style.display = 'block'; barEl.style.width = '0%'; }
+      if (labelEl) { labelEl.style.display = 'inline'; labelEl.textContent = 'Uploading…'; }
+
+      task.on('state_changed',
+        snap => {
+          const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+          if (barEl)   barEl.style.width   = pct + '%';
+          if (labelEl) labelEl.textContent = `Uploading… ${pct}%`;
+        },
+        err => {
+          if (barEl)   barEl.parentElement.style.display = 'none';
+          if (labelEl) labelEl.style.display = 'none';
+          reject(err);
+        },
+        async () => {
+          const url = await task.snapshot.ref.getDownloadURL();
+          if (barEl)   barEl.parentElement.style.display = 'none';
+          if (labelEl) { labelEl.textContent = '✓ Done'; setTimeout(() => labelEl.style.display = 'none', 1500); }
+          resolve(url);
+        }
+      );
+    };
+    input.click();
+  });
+}
+
+async function uploadPostImage() {
+  try {
+    const url = await uploadImage({
+      path:   `posts/${currentUser.uid}`,
+      barEl:  document.getElementById('postUploadBar'),
+      labelEl: null
+    });
+    pendingImageUrl = url;
+    document.getElementById('composeImgThumb').src = url;
+    document.getElementById('composeImgPreview').style.display = 'flex';
+  } catch(e) {
+    if (e.message !== 'cancelled') alert('Upload failed: ' + e.message);
+  }
+}
+
+async function uploadTileImage(isMobileModal) {
+  const btn      = document.getElementById(isMobileModal ? 'modal-tileUploadBtn' : 'tileUploadBtn');
+  const labelEl  = document.getElementById(isMobileModal ? 'modalTileUploadLabel' : 'tileUploadLabel');
+  const barEl    = document.getElementById(isMobileModal ? null : 'tileUploadBar');
+  if (btn) btn.disabled = true;
+  try {
+    const url = await uploadImage({
+      path:   `tiles/${currentUser.uid}`,
+      barEl,
+      labelEl
+    });
+    document.getElementById('imgInput').value       = url;
+    document.getElementById('modal-imgInput').value = url;
+  } catch(e) {
+    if (e.message !== 'cancelled') alert('Upload failed: ' + e.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// Wire up upload buttons
+document.getElementById('tileUploadBtn').onclick       = () => uploadTileImage(false);
+document.getElementById('modal-tileUploadBtn').onclick = () => uploadTileImage(true);
+
+// ================================================================
 // NAVIGATION
 // ================================================================
 let currentPage = 'home';
@@ -55,7 +141,7 @@ function navigateTo(page) {
   const navBtn = document.querySelector(`.nav-btn[data-page="${page}"]`);
   if (navBtn) navBtn.classList.add('active');
   currentPage = page;
-  if (page === 'public') loadPublicGardens();
+  if (page === 'public')    loadPublicGardens();
   if (page === 'community') loadFeed();
 }
 
@@ -90,10 +176,7 @@ function loadMyGardens() {
           allDocs.push({ doc, isOwn: false });
       });
     }
-    if (allDocs.length === 0) {
-      emptyState.style.display = 'block';
-      return;
-    }
+    if (allDocs.length === 0) { emptyState.style.display = 'block'; return; }
     emptyState.style.display = 'none';
     allDocs.forEach(({ doc, isOwn }) =>
       myGrid.appendChild(buildGardenCard(doc.id, doc.data(), isOwn)));
@@ -107,7 +190,6 @@ function loadMyGardens() {
       .catch(() => mergeAndRender(ownedSnap, null));
   };
 
-  // Try ordered query; fall back to unordered if index not ready
   myGardensUnsubscribe = db.collection('gardens')
     .where('ownerId', '==', currentUser.uid)
     .orderBy('createdAt', 'desc')
@@ -147,9 +229,10 @@ function loadPublicGardens() {
 function buildGardenCard(gardenId, data, isOwn) {
   const card = document.createElement('div');
   card.className = 'garden-card';
-  const rows = data.rows || 6;
-  const cols = data.cols || 6;
-  const pRows = Math.min(rows, 12), pCols = Math.min(cols, 12);
+  const rows  = data.rows || 6;
+  const cols  = data.cols || 6;
+  const pRows = Math.min(rows, 12);
+  const pCols = Math.min(cols, 12);
 
   const preview = document.createElement('div');
   preview.className = 'garden-card-preview';
@@ -169,16 +252,16 @@ function buildGardenCard(gardenId, data, isOwn) {
     });
   });
 
-  const isCollab = !isOwn && data.collaboratorEmails?.includes(currentUser?.email);
+  const isCollab = !isOwn && (data.collaboratorEmails || []).includes(currentUser?.email);
   const badge = data.visibility === 'public'
     ? '<span class="garden-card-badge badge-public">🌍 Public</span>'
     : isCollab
       ? '<span class="garden-card-badge badge-collab">✏ Collaborator</span>'
       : '<span class="garden-card-badge badge-private">🔒 Private</span>';
 
-  const ownerLine = (!isOwn && !isCollab) && data.ownerName
+  const ownerLine = (!isOwn && !isCollab && data.ownerName)
     ? `<div class="garden-card-owner">by ${escHtml(data.ownerName)}</div>` : '';
-  const collabLine = isCollab && data.ownerName
+  const collabLine = (isCollab && data.ownerName)
     ? `<div class="garden-card-owner">by ${escHtml(data.ownerName)}</div>` : '';
 
   card.innerHTML = `
@@ -198,12 +281,12 @@ function escHtml(s) {
 // ================================================================
 // CREATE GARDEN MODAL
 // ================================================================
-const createOverlay   = document.getElementById('create-modal-overlay');
-const gardenNameInput = document.getElementById('gardenNameInput');
-const gridRowsInput   = document.getElementById('gridRows');
-const gridColsInput   = document.getElementById('gridCols');
-const gridPreviewEl   = document.getElementById('gridPreview');
-const gridPreviewLabel= document.getElementById('gridPreviewLabel');
+const createOverlay    = document.getElementById('create-modal-overlay');
+const gardenNameInput  = document.getElementById('gardenNameInput');
+const gridRowsInput    = document.getElementById('gridRows');
+const gridColsInput    = document.getElementById('gridCols');
+const gridPreviewEl    = document.getElementById('gridPreview');
+const gridPreviewLabel = document.getElementById('gridPreviewLabel');
 let selectedVisibility = 'private';
 
 function openCreateModal() {
@@ -230,8 +313,8 @@ gridRowsInput.addEventListener('input', updateGridPreview);
 gridColsInput.addEventListener('input', updateGridPreview);
 
 function updateGridPreview() {
-  const r = Math.min(20, Math.max(2, +gridRowsInput.value||6));
-  const c = Math.min(20, Math.max(2, +gridColsInput.value||6));
+  const r = Math.min(20, Math.max(2, +gridRowsInput.value || 6));
+  const c = Math.min(20, Math.max(2, +gridColsInput.value || 6));
   gridPreviewEl.style.gridTemplateColumns = `repeat(${Math.min(c,16)},1fr)`;
   gridPreviewEl.style.gridTemplateRows    = `repeat(${Math.min(r,16)},1fr)`;
   gridPreviewEl.innerHTML = '';
@@ -239,28 +322,28 @@ function updateGridPreview() {
     const cell = document.createElement('div'); cell.className = 'preview-cell';
     gridPreviewEl.appendChild(cell);
   }
-  gridPreviewLabel.textContent = `${r*c} plot${r*c!==1?'s':''}`;
+  gridPreviewLabel.textContent = `${r*c} plot${r*c !== 1 ? 's' : ''}`;
 }
 
 document.getElementById('visPrivate').onclick = () => setVis('private');
 document.getElementById('visPublic').onclick  = () => setVis('public');
 function setVis(v) {
   selectedVisibility = v;
-  document.getElementById('visPrivate').classList.toggle('active', v==='private');
-  document.getElementById('visPublic').classList.toggle('active', v==='public');
+  document.getElementById('visPrivate').classList.toggle('active', v === 'private');
+  document.getElementById('visPublic').classList.toggle('active', v === 'public');
 }
 
 document.getElementById('confirmCreateGardenBtn').onclick = async () => {
   const name = gardenNameInput.value.trim();
   if (!name) { gardenNameInput.focus(); return; }
-  const rows = Math.min(20, Math.max(2, +gridRowsInput.value||6));
-  const cols = Math.min(20, Math.max(2, +gridColsInput.value||6));
+  const rows = Math.min(20, Math.max(2, +gridRowsInput.value || 6));
+  const cols = Math.min(20, Math.max(2, +gridColsInput.value || 6));
   const docRef = await db.collection('gardens').add({
     name, rows, cols,
-    ownerId:   currentUser.uid,
-    ownerName: currentUser.displayName || currentUser.email,
-    ownerEmail: currentUser.email,
-    visibility: selectedVisibility,
+    ownerId:            currentUser.uid,
+    ownerName:          currentUser.displayName || currentUser.email,
+    ownerEmail:         currentUser.email,
+    visibility:         selectedVisibility,
     collaboratorEmails: [],
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -270,7 +353,7 @@ document.getElementById('confirmCreateGardenBtn').onclick = async () => {
 };
 
 // ================================================================
-// GARDEN SETTINGS MODAL (visibility + collaborators + delete)
+// GARDEN SETTINGS MODAL
 // ================================================================
 const settingsOverlay = document.getElementById('settings-modal-overlay');
 
@@ -280,19 +363,14 @@ settingsOverlay.addEventListener('click', e => { if (e.target === settingsOverla
 function openSettingsModal() {
   if (!currentGardenData) return;
   document.getElementById('settingsGardenName').textContent = currentGardenData.name || '';
-
-  // Sync visibility buttons
   const isPublic = currentGardenData.visibility === 'public';
   document.getElementById('settingsVisPrivate').classList.toggle('active', !isPublic);
   document.getElementById('settingsVisPublic').classList.toggle('active', isPublic);
-
   renderCollabList();
   settingsOverlay.classList.add('open');
 }
-
 document.getElementById('gardenSettingsBtn').onclick = openSettingsModal;
 
-// Visibility toggles in settings
 document.getElementById('settingsVisPrivate').onclick = async () => {
   await updateGardenVisibility('private');
   document.getElementById('settingsVisPrivate').classList.add('active');
@@ -308,11 +386,10 @@ async function updateGardenVisibility(val) {
   currentGardenData.visibility = val;
 }
 
-// Collaborators
 function renderCollabList() {
-  const list = document.getElementById('collabList');
-  list.innerHTML = '';
+  const list   = document.getElementById('collabList');
   const emails = currentGardenData.collaboratorEmails || [];
+  list.innerHTML = '';
   if (emails.length === 0) {
     list.innerHTML = '<p class="collab-empty">No collaborators yet.</p>';
     return;
@@ -333,10 +410,9 @@ document.getElementById('addCollabBtn').onclick = addCollaborator;
 document.getElementById('collabEmailInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') addCollaborator();
 });
-
 async function addCollaborator() {
-  const input = document.getElementById('collabEmailInput');
-  const email = input.value.trim().toLowerCase();
+  const input  = document.getElementById('collabEmailInput');
+  const email  = input.value.trim().toLowerCase();
   if (!email || !email.includes('@')) return;
   const emails = currentGardenData.collaboratorEmails || [];
   if (emails.includes(email)) { input.value = ''; return; }
@@ -346,7 +422,6 @@ async function addCollaborator() {
   input.value = '';
   renderCollabList();
 }
-
 async function removeCollaborator(email) {
   const emails = (currentGardenData.collaboratorEmails || []).filter(e => e !== email);
   await db.collection('gardens').doc(currentGardenId).update({ collaboratorEmails: emails });
@@ -354,19 +429,15 @@ async function removeCollaborator(email) {
   renderCollabList();
 }
 
-// Delete garden
 document.getElementById('deleteGardenBtn').onclick = async () => {
   if (!currentGardenId) return;
   const name = currentGardenData?.name || 'this garden';
-  if (!confirm(`Are you sure you want to permanently delete "${name}"? This cannot be undone.`)) return;
-
-  // Delete all tiles in subcollection first
+  if (!confirm(`Permanently delete "${name}"? This cannot be undone.`)) return;
   const tilesSnap = await db.collection('gardens').doc(currentGardenId).collection('tiles').get();
   const batch = db.batch();
   tilesSnap.forEach(doc => batch.delete(doc.ref));
   await batch.commit();
   await db.collection('gardens').doc(currentGardenId).delete();
-
   settingsOverlay.classList.remove('open');
   exitGarden();
   navigateTo('home');
@@ -391,8 +462,10 @@ function openGarden(gardenId, gardenData, isOwn) {
   isGardenOwner     = isOwn;
 
   document.getElementById('gardenTitle').textContent = gardenData.name || 'Garden';
-  document.getElementById('gardenOwnerBadge').textContent = isOwn ? '' : `by ${gardenData.ownerName || 'unknown'}`;
-  document.getElementById('gardenSettingsBtn').style.display = isOwn ? 'inline-block' : 'none';
+  document.getElementById('gardenOwnerBadge').textContent =
+    isOwn ? '' : `by ${gardenData.ownerName || 'unknown'}`;
+  document.getElementById('gardenSettingsBtn').style.display =
+    (isOwn && gardenData.ownerId === currentUser?.uid) ? 'inline-block' : 'none';
 
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-garden').classList.add('active');
@@ -410,7 +483,7 @@ function openGarden(gardenId, gardenData, isOwn) {
   container.style.fontSize = Math.max(8, Math.min(14, tilePx * 0.35)) + 'px';
 
   activeId = null;
-  document.getElementById('editInfo').style.display  = 'none';
+  document.getElementById('editInfo').style.display    = 'none';
   document.getElementById('defaultInfo').style.display = 'block';
 
   if (tilesUnsubscribe) tilesUnsubscribe();
@@ -440,26 +513,24 @@ document.getElementById('backBtn').onclick = () => {
 function renderGrid() {
   if (!currentGardenData) return;
   const garden = document.getElementById('garden-container');
-  const rows = currentGardenData.rows || 6;
-  const cols = currentGardenData.cols || 6;
+  const rows   = currentGardenData.rows || 6;
+  const cols   = currentGardenData.cols || 6;
   garden.innerHTML = '';
 
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
     const id  = tileId(r, c);
     const d   = tilesData[id] || {};
     const div = document.createElement('div');
-    div.className = 'tile';
+    div.className  = 'tile';
     div.dataset.id = id;
     div.style.background = d.color || '#e8ffd6';
+
     const group = d.mergeGroup;
-    if (group) {
-      div.textContent = isMergeLeader(id, group) ? (d.title || '') : '';
-    } else {
-      div.textContent = d.title || '';
-    }
+    div.textContent = group ? (isMergeLeader(id, group) ? (d.title || '') : '') : (d.title || '');
     if (!d.title) div.classList.add('empty');
     applyMergeBorderClasses(div, id, r, c, rows, cols);
     if (id === activeId) div.classList.add('active');
+
     if (isGardenOwner) {
       div.onclick = () => handleTileClick(id);
     } else {
@@ -473,7 +544,7 @@ function renderGrid() {
 
 function isMergeLeader(id, group) {
   const members = Object.keys(tilesData).filter(k => tilesData[k].mergeGroup === group);
-  members.sort((a, b) => { const ra=tileRC(a),rb=tileRC(b); return ra.r!==rb.r?ra.r-rb.r:ra.c-rb.c; });
+  members.sort((a, b) => { const ra=tileRC(a),rb=tileRC(b); return ra.r!==rb.r ? ra.r-rb.r : ra.c-rb.c; });
   return members[0] === id;
 }
 
@@ -489,37 +560,39 @@ function showReadOnlyInfo(id) {
   const d = tilesData[id] || {};
   if (!d.title) return;
   document.getElementById('defaultInfo').innerHTML = `
-    <h2 style="font-family:'Schoolbell',cursive">${escHtml(d.title)}</h2>
+    <h2>${escHtml(d.title)}</h2>
     ${d.description ? `<p>${escHtml(d.description)}</p>` : ''}
     ${d.imageUrl ? `<img src="${escHtml(d.imageUrl)}" style="width:100%;border-radius:0.5rem;margin-top:0.5rem"/>` : ''}
   `;
-  document.getElementById('editInfo').style.display  = 'none';
+  document.getElementById('editInfo').style.display    = 'none';
   document.getElementById('defaultInfo').style.display = 'block';
 }
 
 // ================================================================
 // TILE PANEL
 // ================================================================
-const editInfo   = document.getElementById('editInfo');
-const defaultInfo= document.getElementById('defaultInfo');
-const titleInput = document.getElementById('titleInput');
-const descInput  = document.getElementById('descInput');
-const imgInput   = document.getElementById('imgInput');
-const colorInput = document.getElementById('colorInput');
-const splitBtn   = document.getElementById('splitBtn');
+const editInfo    = document.getElementById('editInfo');
+const defaultInfo = document.getElementById('defaultInfo');
+const titleInput  = document.getElementById('titleInput');
+const descInput   = document.getElementById('descInput');
+const imgInput    = document.getElementById('imgInput');
+const colorInput  = document.getElementById('colorInput');
+const splitBtn    = document.getElementById('splitBtn');
 
 function openPanel(id) {
   activeId = id;
   defaultInfo.style.display = 'none';
   editInfo.style.display    = 'block';
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
-  const {r,c} = tileRC(id);
-  const tiles  = document.querySelectorAll('.tile');
+  const { r, c } = tileRC(id);
   const cols   = currentGardenData.cols || 6;
-  if (tiles[r*cols+c]) tiles[r*cols+c].classList.add('active');
+  const tiles  = document.querySelectorAll('.tile');
+  if (tiles[r * cols + c]) tiles[r * cols + c].classList.add('active');
   const d = tilesData[id] || {};
-  titleInput.value = d.title||''; descInput.value=d.description||'';
-  imgInput.value   = d.imageUrl||''; colorInput.value=d.color||'#e8ffd6';
+  titleInput.value = d.title || '';
+  descInput.value  = d.description || '';
+  imgInput.value   = d.imageUrl || '';
+  colorInput.value = d.color || '#e8ffd6';
   splitBtn.style.display = d.mergeGroup ? 'inline-block' : 'none';
 }
 
@@ -534,18 +607,25 @@ function tilesRef() {
 document.getElementById('saveBtn').onclick = async () => {
   if (!activeId) return;
   const d = tilesData[activeId] || {};
-  const payload = { title: titleInput.value.trim(), description: descInput.value.trim(),
-    imageUrl: imgInput.value.trim(), color: colorInput.value,
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  const payload = {
+    title:       titleInput.value.trim(),
+    description: descInput.value.trim(),
+    imageUrl:    imgInput.value.trim(),
+    color:       colorInput.value,
+    updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
+  };
   if (d.mergeGroup) {
     const batch = db.batch();
     Object.keys(tilesData).forEach(k => {
-      if (tilesData[k].mergeGroup===d.mergeGroup)
+      if (tilesData[k].mergeGroup === d.mergeGroup)
         batch.set(tilesRef().doc(k), { ...payload, mergeGroup: d.mergeGroup });
     });
     await batch.commit();
-  } else { await tilesRef().doc(activeId).set(payload); }
-  db.collection('gardens').doc(currentGardenId).update({ updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+  } else {
+    await tilesRef().doc(activeId).set(payload);
+  }
+  db.collection('gardens').doc(currentGardenId)
+    .update({ updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
 };
 
 document.getElementById('clearBtn').onclick = async () => {
@@ -554,18 +634,23 @@ document.getElementById('clearBtn').onclick = async () => {
   if (d.mergeGroup) {
     const batch = db.batch();
     Object.keys(tilesData).forEach(k => {
-      if (tilesData[k].mergeGroup===d.mergeGroup) batch.delete(tilesRef().doc(k));
+      if (tilesData[k].mergeGroup === d.mergeGroup) batch.delete(tilesRef().doc(k));
     });
     await batch.commit();
-  } else { await tilesRef().doc(activeId).delete(); }
+  } else {
+    await tilesRef().doc(activeId).delete();
+  }
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
   activeId = null;
-  editInfo.style.display = 'none'; defaultInfo.style.display = 'block';
+  editInfo.style.display    = 'none';
+  defaultInfo.style.display = 'block';
 };
 
 document.getElementById('exitBtn').onclick = () => {
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
-  activeId = null; editInfo.style.display='none'; defaultInfo.style.display='block';
+  activeId = null;
+  editInfo.style.display    = 'none';
+  defaultInfo.style.display = 'block';
 };
 
 document.getElementById('splitBtn').onclick = async () => {
@@ -574,7 +659,7 @@ document.getElementById('splitBtn').onclick = async () => {
   if (!d.mergeGroup) return;
   const batch = db.batch();
   Object.keys(tilesData).forEach(k => {
-    if (tilesData[k].mergeGroup===d.mergeGroup) {
+    if (tilesData[k].mergeGroup === d.mergeGroup) {
       const { mergeGroup, ...rest } = tilesData[k];
       batch.set(tilesRef().doc(k), { ...rest, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     }
@@ -604,14 +689,14 @@ function toggleMergeMode(on) {
   mergeModeBtn.classList.toggle('active', mergeMode);
   mergeModeBtn.textContent = mergeMode ? '✕ Cancel' : '⊞ Merge';
   if (mergeMode) {
-    editInfo.style.display='none'; defaultInfo.style.display='block';
-    document.querySelectorAll('.tile').forEach(t=>t.classList.remove('active'));
+    editInfo.style.display = 'none'; defaultInfo.style.display = 'block';
+    document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
     activeId = null;
     mergeToolbar.classList.add('visible');
     updateMergeToolbar(); applyMergeModeUI();
   } else {
     mergeToolbar.classList.remove('visible');
-    document.querySelectorAll('.tile').forEach(t=>
+    document.querySelectorAll('.tile').forEach(t =>
       t.classList.remove('merge-selected','merge-eligible','merge-ineligible'));
   }
 }
@@ -621,17 +706,17 @@ function getEligibleIds() {
   let lockedGroup = null;
   mergeSelected.forEach(id => { const g=(tilesData[id]||{}).mergeGroup; if(g) lockedGroup=g; });
   const eligible = new Set();
-  if (mergeSelected.size===0) {
+  if (mergeSelected.size === 0) {
     for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) eligible.add(tileId(r,c));
   } else {
     mergeSelected.forEach(id => {
-      const {r,c}=tileRC(id);
-      [r>0&&tileId(r-1,c),r<rows-1&&tileId(r+1,c),c>0&&tileId(r,c-1),c<cols-1&&tileId(r,c+1)]
-        .filter(Boolean).forEach(n=>{ if(!mergeSelected.has(n)) eligible.add(n); });
+      const {r,c} = tileRC(id);
+      [r>0&&tileId(r-1,c), r<rows-1&&tileId(r+1,c), c>0&&tileId(r,c-1), c<cols-1&&tileId(r,c+1)]
+        .filter(Boolean).forEach(n => { if (!mergeSelected.has(n)) eligible.add(n); });
     });
     eligible.forEach(id => {
-      const g=(tilesData[id]||{}).mergeGroup;
-      if (g && lockedGroup && g!==lockedGroup) eligible.delete(id);
+      const g = (tilesData[id]||{}).mergeGroup;
+      if (g && lockedGroup && g !== lockedGroup) eligible.delete(id);
     });
   }
   return eligible;
@@ -651,7 +736,7 @@ function applyMergeModeUI() {
 function toggleMergeSelection(id) {
   if (mergeSelected.has(id)) {
     mergeSelected.delete(id);
-    if (mergeSelected.size>0 && !isConnected(mergeSelected)) mergeSelected.add(id);
+    if (mergeSelected.size > 0 && !isConnected(mergeSelected)) mergeSelected.add(id);
   } else {
     if (!getEligibleIds().has(id)) return;
     mergeSelected.add(id);
@@ -660,37 +745,43 @@ function toggleMergeSelection(id) {
 }
 
 function isConnected(ids) {
-  if (ids.size<=1) return true;
+  if (ids.size <= 1) return true;
   const rows=currentGardenData.rows||6, cols=currentGardenData.cols||6;
   const arr=[...ids], visited=new Set(), queue=[arr[0]]; visited.add(arr[0]);
   while (queue.length) {
     const cur=queue.shift(), {r,c}=tileRC(cur);
-    [r>0&&tileId(r-1,c),r<rows-1&&tileId(r+1,c),c>0&&tileId(r,c-1),c<cols-1&&tileId(r,c+1)]
-      .filter(Boolean).forEach(n=>{ if(ids.has(n)&&!visited.has(n)){visited.add(n);queue.push(n);} });
+    [r>0&&tileId(r-1,c), r<rows-1&&tileId(r+1,c), c>0&&tileId(r,c-1), c<cols-1&&tileId(r,c+1)]
+      .filter(Boolean)
+      .forEach(n => { if (ids.has(n) && !visited.has(n)) { visited.add(n); queue.push(n); } });
   }
-  return visited.size===ids.size;
+  return visited.size === ids.size;
 }
 
 function updateMergeToolbar() {
   const n = mergeSelected.size;
-  mergeCountSpan.textContent = n===0 ? 'Tap tiles to select' : `${n} tile${n>1?'s':''} selected`;
-  mergeConfirmBtn.disabled = n<2;
+  mergeCountSpan.textContent = n === 0 ? 'Tap tiles to select' : `${n} tile${n>1?'s':''} selected`;
+  mergeConfirmBtn.disabled = n < 2;
 }
 
 mergeConfirmBtn.onclick = async () => {
-  if (mergeSelected.size<2) return;
-  let group=null;
-  mergeSelected.forEach(id=>{ const g=(tilesData[id]||{}).mergeGroup; if(g) group=g; });
+  if (mergeSelected.size < 2) return;
+  let group = null;
+  mergeSelected.forEach(id => { const g=(tilesData[id]||{}).mergeGroup; if(g) group=g; });
   if (!group) group = crypto.randomUUID();
-  const sorted=[...mergeSelected].sort((a,b)=>{ const ra=tileRC(a),rb=tileRC(b); return ra.r!==rb.r?ra.r-rb.r:ra.c-rb.c; });
-  const leaderData=tilesData[sorted[0]]||{};
-  const batch=db.batch();
-  mergeSelected.forEach(id=>{
-    const ex=tilesData[id]||{};
-    batch.set(tilesRef().doc(id),{
-      title:leaderData.title||ex.title||'', description:leaderData.description||ex.description||'',
-      imageUrl:leaderData.imageUrl||ex.imageUrl||'', color:leaderData.color||ex.color||'#e8ffd6',
-      mergeGroup:group, updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  const sorted = [...mergeSelected].sort((a,b) => {
+    const ra=tileRC(a), rb=tileRC(b); return ra.r!==rb.r ? ra.r-rb.r : ra.c-rb.c;
+  });
+  const leaderData = tilesData[sorted[0]] || {};
+  const batch = db.batch();
+  mergeSelected.forEach(id => {
+    const ex = tilesData[id] || {};
+    batch.set(tilesRef().doc(id), {
+      title:       leaderData.title       || ex.title       || '',
+      description: leaderData.description || ex.description || '',
+      imageUrl:    leaderData.imageUrl    || ex.imageUrl    || '',
+      color:       leaderData.color       || ex.color       || '#e8ffd6',
+      mergeGroup:  group,
+      updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
     });
   });
   await batch.commit();
@@ -701,40 +792,21 @@ mergeCancelBtn.onclick = () => toggleMergeMode(false);
 // ================================================================
 // COMMUNITY FEED
 // ================================================================
-let pendingImageUrl = '';
-let pendingTaggedGardens = []; // [{id, name}]
+let pendingImageUrl      = '';
+let pendingTaggedGardens = [];
 
-const submitPostBtn  = document.getElementById('submitPostBtn');
-const postTextInput  = document.getElementById('postTextInput');
-const addImgBtn      = document.getElementById('addImgBtn');
-const imgUrlInput    = document.getElementById('imgUrlInput');
+const submitPostBtn     = document.getElementById('submitPostBtn');
+const postTextInput     = document.getElementById('postTextInput');
+const addImgBtn         = document.getElementById('addImgBtn');
 const composeImgPreview = document.getElementById('composeImgPreview');
 const composeImgThumb   = document.getElementById('composeImgThumb');
-const removeImgBtn   = document.getElementById('removeImgBtn');
-const tagGardenBtn   = document.getElementById('tagGardenBtn');
-const composeTagsEl  = document.getElementById('composeTags');
-const feedEl         = document.getElementById('community-feed');
-const feedEmpty      = document.getElementById('feed-empty');
+const removeImgBtn      = document.getElementById('removeImgBtn');
+const tagGardenBtn      = document.getElementById('tagGardenBtn');
+const composeTagsEl     = document.getElementById('composeTags');
+const feedEl            = document.getElementById('community-feed');
+const feedEmpty         = document.getElementById('feed-empty');
 
-// Image URL input toggle
-addImgBtn.onclick = () => {
-  const visible = imgUrlInput.style.display === 'block';
-  imgUrlInput.style.display = visible ? 'none' : 'block';
-  if (!visible) imgUrlInput.focus();
-};
-
-imgUrlInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const url = imgUrlInput.value.trim();
-    if (url) {
-      pendingImageUrl = url;
-      composeImgThumb.src = url;
-      composeImgPreview.style.display = 'flex';
-      imgUrlInput.value = '';
-      imgUrlInput.style.display = 'none';
-    }
-  }
-});
+addImgBtn.onclick = () => uploadPostImage();
 
 removeImgBtn.onclick = () => {
   pendingImageUrl = '';
@@ -742,23 +814,21 @@ removeImgBtn.onclick = () => {
   composeImgPreview.style.display = 'none';
 };
 
-// Tag garden picker
 tagGardenBtn.onclick = () => {
-  // Populate picker with user's public gardens
   const list = document.getElementById('tag-picker-list');
   list.innerHTML = '<p style="color:#888;font-size:0.9rem">Loading…</p>';
   document.getElementById('tag-picker-overlay').classList.add('open');
   db.collection('gardens').where('ownerId','==',currentUser.uid).get().then(snap => {
     list.innerHTML = '';
     if (snap.empty) {
-      list.innerHTML = '<p style="color:#888;font-size:0.9rem">You have no gardens to tag.</p>';
+      list.innerHTML = '<p style="color:#888;font-size:0.9rem">You have no gardens to tag yet.</p>';
       return;
     }
     snap.forEach(doc => {
       const d = doc.data();
       const already = pendingTaggedGardens.find(g => g.id === doc.id);
       const btn = document.createElement('button');
-      btn.className = 'tag-picker-item' + (already ? ' selected' : '');
+      btn.className   = 'tag-picker-item' + (already ? ' selected' : '');
       btn.textContent = d.name || 'Unnamed';
       btn.onclick = () => {
         if (already) {
@@ -787,7 +857,7 @@ function renderComposeTags() {
     const chip = document.createElement('span');
     chip.className = 'tag-chip';
     chip.innerHTML = `🌿 ${escHtml(g.name)} <button class="chip-remove" data-id="${g.id}">✕</button>`;
-    chip.querySelector('.chip-remove').onclick = (e) => {
+    chip.querySelector('.chip-remove').onclick = e => {
       e.stopPropagation();
       pendingTaggedGardens = pendingTaggedGardens.filter(x => x.id !== g.id);
       renderComposeTags();
@@ -796,29 +866,30 @@ function renderComposeTags() {
   });
 }
 
-// Submit post
 submitPostBtn.onclick = async () => {
   const text = postTextInput.value.trim();
   if (!text && !pendingImageUrl) return;
-
-  await db.collection('posts').add({
-    authorId:   currentUser.uid,
-    authorName: currentUser.displayName || currentUser.email,
-    authorPhoto:currentUser.photoURL || '',
-    text,
-    imageUrl:   pendingImageUrl,
-    taggedGardens: pendingTaggedGardens,
-    createdAt:  firebase.firestore.FieldValue.serverTimestamp(),
-    likes:      []
-  });
-
-  postTextInput.value = '';
-  pendingImageUrl = '';
-  pendingTaggedGardens = [];
-  composeImgPreview.style.display = 'none';
-  composeImgThumb.src = '';
-  imgUrlInput.style.display = 'none';
-  renderComposeTags();
+  submitPostBtn.disabled = true;
+  try {
+    await db.collection('posts').add({
+      authorId:      currentUser.uid,
+      authorName:    currentUser.displayName || currentUser.email,
+      authorPhoto:   currentUser.photoURL || '',
+      text,
+      imageUrl:      pendingImageUrl,
+      taggedGardens: pendingTaggedGardens,
+      createdAt:     firebase.firestore.FieldValue.serverTimestamp(),
+      likes:         []
+    });
+    postTextInput.value = '';
+    pendingImageUrl = '';
+    pendingTaggedGardens = [];
+    composeImgPreview.style.display = 'none';
+    composeImgThumb.src = '';
+    renderComposeTags();
+  } finally {
+    submitPostBtn.disabled = false;
+  }
 };
 
 function loadFeed() {
@@ -833,33 +904,24 @@ function loadFeed() {
 }
 
 function buildPostCard(postId, data) {
-  const card = document.createElement('div');
+  const card    = document.createElement('div');
   card.className = 'post-card';
-
-  const isOwn = currentUser && data.authorId === currentUser.uid;
-  const liked = (data.likes||[]).includes(currentUser?.uid);
+  const isOwn   = currentUser && data.authorId === currentUser.uid;
+  const liked   = (data.likes||[]).includes(currentUser?.uid);
   const likeCount = (data.likes||[]).length;
-
-  const initials = (data.authorName||'?')[0].toUpperCase();
+  const initials  = (data.authorName||'?')[0].toUpperCase();
   const avatarHtml = data.authorPhoto
     ? `<img src="${escHtml(data.authorPhoto)}" class="post-avatar-img" alt="" />`
     : `<div class="post-avatar-initials">${initials}</div>`;
-
   const imgHtml = data.imageUrl
     ? `<img src="${escHtml(data.imageUrl)}" class="post-image" alt="" onerror="this.style.display='none'" />`
     : '';
-
   const tagsHtml = (data.taggedGardens||[]).length
     ? `<div class="post-tags">${data.taggedGardens.map(g =>
         `<span class="post-tag-chip" data-garden-id="${escHtml(g.id)}">🌿 ${escHtml(g.name)}</span>`
-      ).join('')}</div>`
-    : '';
-
-  const timeStr = data.createdAt?.toDate
-    ? timeAgo(data.createdAt.toDate()) : 'just now';
-
-  const deleteBtn = isOwn
-    ? `<button class="post-delete-btn" data-id="${postId}">🗑</button>` : '';
+      ).join('')}</div>` : '';
+  const timeStr  = data.createdAt?.toDate ? timeAgo(data.createdAt.toDate()) : 'just now';
+  const deleteBtn = isOwn ? `<button class="post-delete-btn" data-id="${postId}">🗑</button>` : '';
 
   card.innerHTML = `
     <div class="post-header">
@@ -880,35 +942,25 @@ function buildPostCard(postId, data) {
     </div>
   `;
 
-  // Like
   card.querySelector('.like-btn').onclick = async () => {
     const ref = db.collection('posts').doc(postId);
-    const uid = currentUser.uid;
-    if (liked) {
-      await ref.update({ likes: firebase.firestore.FieldValue.arrayRemove(uid) });
-    } else {
-      await ref.update({ likes: firebase.firestore.FieldValue.arrayUnion(uid) });
-    }
+    if (liked) await ref.update({ likes: firebase.firestore.FieldValue.arrayRemove(currentUser.uid) });
+    else       await ref.update({ likes: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) });
   };
 
-  // Delete
   const delBtn = card.querySelector('.post-delete-btn');
-  if (delBtn) {
-    delBtn.onclick = async () => {
-      if (!confirm('Delete this post?')) return;
-      await db.collection('posts').doc(postId).delete();
-    };
-  }
+  if (delBtn) delBtn.onclick = async () => {
+    if (!confirm('Delete this post?')) return;
+    await db.collection('posts').doc(postId).delete();
+  };
 
-  // Tagged garden chips → navigate to garden
   card.querySelectorAll('.post-tag-chip').forEach(chip => {
     chip.onclick = async () => {
-      const gardenId = chip.dataset.gardenId;
-      const doc = await db.collection('gardens').doc(gardenId).get();
+      const doc = await db.collection('gardens').doc(chip.dataset.gardenId).get();
       if (doc.exists) {
-        const isOwn = currentUser && doc.data().ownerId === currentUser.uid;
-        const isCollab = doc.data().collaboratorEmails?.includes(currentUser?.email);
-        openGarden(doc.id, doc.data(), isOwn || isCollab);
+        const own    = currentUser && doc.data().ownerId === currentUser.uid;
+        const collab = (doc.data().collaboratorEmails||[]).includes(currentUser?.email);
+        openGarden(doc.id, doc.data(), own || collab);
       }
     };
   });
@@ -918,8 +970,8 @@ function buildPostCard(postId, data) {
 
 function timeAgo(date) {
   const diff = Math.floor((Date.now() - date) / 1000);
-  if (diff < 60)  return 'just now';
-  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return `${Math.floor(diff/60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
   return `${Math.floor(diff/86400)}d ago`;
 }
@@ -949,18 +1001,22 @@ function timeAgo(date) {
     if (!isMobile()) return;
     const d = tilesData[id] || {};
     mTitle.textContent = d.title || 'Empty Plot';
-    mTitleInput.value  = d.title||''; mDesc.value=d.description||'';
-    mImg.value=d.imageUrl||''; mColor.value=d.color||'#e8ffd6';
+    mTitleInput.value  = d.title       || '';
+    mDesc.value        = d.description || '';
+    mImg.value         = d.imageUrl    || '';
+    mColor.value       = d.color       || '#e8ffd6';
     if (mSplitBtn) mSplitBtn.style.display = d.mergeGroup ? 'inline-block' : 'none';
     overlay.classList.add('open');
   };
 
-  overlay.addEventListener('click', e => { if (e.target===overlay) closeModal(); });
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
 
   document.getElementById('modal-saveBtn').onclick = async () => {
     if (!activeId) return;
-    titleInput.value=mTitleInput.value; descInput.value=mDesc.value;
-    imgInput.value=mImg.value; colorInput.value=mColor.value;
+    titleInput.value = mTitleInput.value;
+    descInput.value  = mDesc.value;
+    imgInput.value   = mImg.value;
+    colorInput.value = mColor.value;
     document.getElementById('saveBtn').click();
     closeModal();
   };
