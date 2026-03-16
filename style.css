@@ -707,3 +707,31 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 0.3rem solid #e67e00 
 
 /* ===== FIX: dm-msg needs relative for reaction picker ===== */
 .dm-msg { position: relative; }
+
+/* ===== COMPOSE POST MODAL ===== */
+#compose-modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 2000;
+  align-items: center; justify-content: center; padding: 1rem;
+}
+#compose-modal-overlay.open { display: flex; }
+#compose-modal {
+  background: var(--tan); border-radius: 1.4rem; padding: 1.5rem 1.8rem 2rem;
+  width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25); position: relative;
+  animation: modalIn 0.2s ease-out;
+}
+#compose-modal h2 { margin: 0 0 1rem; font-size: 1.4rem; }
+.compose-modal-handle { display: none; }
+
+@media (max-width: 900px) {
+  #compose-modal-overlay { align-items: flex-end; padding: 0; }
+  #compose-modal {
+    border-radius: 1.4rem 1.4rem 0 0; max-width: 100%;
+    padding: 0.5rem 1.2rem 2.5rem; animation: slideUp 0.22s ease-out;
+  }
+  .compose-modal-handle {
+    display: block; width: 40px; height: 4px;
+    background: rgba(47,79,47,0.2); border-radius: 2px; margin: 0.7rem auto 1rem;
+  }
+}

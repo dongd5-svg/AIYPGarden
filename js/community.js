@@ -37,6 +37,9 @@ document.querySelectorAll('.comm-nav-btn').forEach(btn => {
 });
 
 function setCommTab(tab) {
+  // + button opens compose modal, not a tab
+  if (tab === 'post') { openComposeModal(); return; }
+
   document.querySelectorAll('.comm-nav-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.comm === tab));
   document.querySelectorAll('.comm-tab-content').forEach(c =>
@@ -51,6 +54,25 @@ function setCommTab(tab) {
   const content = document.getElementById('comm-content');
   if (content) content.scrollTop = 0;
 }
+
+// ── Compose modal ─────────────────────────────────────────────────
+function openComposeModal() {
+  // Reset fields
+  document.getElementById('postTextInput2').value = '';
+  clearPostImage(2);
+  pendingTaggedGardens2 = [];
+  renderComposeTags(2);
+  document.getElementById('postTypeSelect2').value = 'general';
+  document.getElementById('compose-modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('postTextInput2').focus(), 200);
+}
+
+document.getElementById('compose-modal-close').onclick = () =>
+  document.getElementById('compose-modal-overlay').classList.remove('open');
+document.getElementById('compose-modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('compose-modal-overlay'))
+    document.getElementById('compose-modal-overlay').classList.remove('open');
+});
 
 // ── Feed tab buttons ──────────────────────────────────────────────
 document.querySelectorAll('.feed-tab-btn').forEach(btn => {
@@ -513,8 +535,10 @@ async function submitPost(n) {
     clearPostImage(2);
     pendingTaggedGardens2 = [];
     renderComposeTags(2);
+    document.getElementById('compose-modal-overlay').classList.remove('open');
     showToast('Posted! 🌱');
-    setCommTab('feed');
+    // Make sure feed is showing
+    if (currentCommTab !== 'feed') setCommTab('feed');
   } finally {
     btn.disabled = false;
   }
