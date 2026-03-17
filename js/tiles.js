@@ -21,6 +21,10 @@ function initTiles(gardenId, gardenData) {
   const rows = gardenData.rows || 6;
   const cols = gardenData.cols || 6;
   const container = document.getElementById('garden-container');
+
+  // Clear previous content immediately so stale grid doesn't show
+  container.innerHTML = '';
+
   const maxSize = Math.min(
     window.innerWidth > 900 ? window.innerHeight * 0.75 : window.innerWidth * 0.96,
     700
@@ -590,7 +594,10 @@ mergeCancelBtn.onclick = () => toggleMergeMode(false);
   function isMobile() { return window.innerWidth <= 900; }
   function closeModal() {
     overlay.classList.add('closing');
-    setTimeout(() => overlay.classList.remove('open','closing'), 180);
+    // Wait for transition to finish before removing open
+    setTimeout(() => {
+      overlay.classList.remove('open', 'closing');
+    }, 200);
   }
 
   const _orig = openPanel;

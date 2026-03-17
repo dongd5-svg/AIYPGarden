@@ -128,6 +128,9 @@ function openGardenPage(gardenId, gardenData, isOwn) {
   updateSeasonDisplay();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-garden').classList.add('active');
+  // Reset scroll on pages wrapper so garden fills correctly
+  const pw = document.getElementById('pages-wrapper');
+  if (pw) pw.scrollTop = 0;
   currentPage = 'garden';
   applyMode();
   initTiles(gardenId, gardenData);
