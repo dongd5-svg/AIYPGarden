@@ -20,22 +20,36 @@ function loadMyGardens() {
   if (myGardensUnsub)   myGardensUnsub();
   if (sharedGardensInt) clearInterval(sharedGardensInt);
 
-  // Owned gardens — real-time
   const renderOwned = snap => {
     myGrid.innerHTML = '';
     emptyState.style.display = snap.empty ? 'block' : 'none';
     snap.forEach(doc => myGrid.appendChild(buildGardenCard(doc.id, doc.data(), true)));
   };
 
+  const handleError = err => {
+    console.error('My gardens error:', err);
+    // If index missing, fall back to unordered query
+    if (err.code === 'failed-precondition' || err.message?.includes('index')) {
+      console.warn('Index missing — falling back to unordered query');
+      db.collection('gardens')
+        .where('ownerId', '==', currentUser.uid)
+        .get()
+        .then(renderOwned)
+        .catch(e => {
+          console.error('Fallback also failed:', e);
+          emptyState.style.display = 'block';
+          emptyState.querySelector('p').textContent =
+            'Could not load gardens. Check your connection and try refreshing.';
+        });
+    } else {
+      emptyState.style.display = 'block';
+    }
+  };
+
   myGardensUnsub = db.collection('gardens')
     .where('ownerId', '==', currentUser.uid)
     .orderBy('createdAt', 'desc')
-    .onSnapshot(renderOwned, () => {
-      db.collection('gardens')
-        .where('ownerId', '==', currentUser.uid)
-        .get().then(renderOwned)
-        .catch(err => console.error('My gardens error:', err));
-    });
+    .onSnapshot(renderOwned, handleError);
 
   // Shared / collaborator — polled every 30s
   const loadShared = () => {

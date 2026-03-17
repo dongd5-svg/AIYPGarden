@@ -170,8 +170,17 @@ document.getElementById('skipGardenBtn').onclick = finishOnboarding;
 // ── Profile sheet ─────────────────────────────────────────────────
 const profileSheetOverlay = document.getElementById('profile-sheet-overlay');
 
-document.getElementById('profileNavBtn').onclick  = openProfileSheet;
 document.getElementById('profileAvatarBtn').onclick = openProfileSheet;
+
+// Mobile profile nav button — if there are unread notifications, open notifications
+// otherwise open profile sheet
+document.getElementById('profileNavBtn').onclick = () => {
+  if (typeof unreadNotifCount !== 'undefined' && unreadNotifCount > 0) {
+    if (typeof openNotifModal === 'function') openNotifModal();
+  } else {
+    openProfileSheet();
+  }
+};
 
 profileSheetOverlay.addEventListener('click', e => {
   if (e.target === profileSheetOverlay) closeProfileSheet();

@@ -495,36 +495,52 @@ function listenNotifications() {
   if (notifUnsub) notifUnsub();
   if (!currentUser) return;
 
+  const processSnap = snap => {
+    notifCache = [];
+    snap.forEach(doc => notifCache.push({ id: doc.id, ...doc.data() }));
+    // Sort client-side so we don't depend on orderBy index
+    notifCache.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    notifCache = notifCache.slice(0, 40);
+    unreadNotifCount = notifCache.filter(n => !n.read).length;
+    updateNotifBadge();
+    if (document.getElementById('notif-overlay').style.display !== 'none') {
+      renderNotifList();
+    }
+  };
+
+  // Try with orderBy first, fall back to simple query if index missing
   notifUnsub = notifsRef()
     .where('toUid', '==', currentUser.uid)
     .orderBy('createdAt', 'desc')
     .limit(40)
-    .onSnapshot(snap => {
-      notifCache = [];
-      snap.forEach(doc => notifCache.push({ id: doc.id, ...doc.data() }));
-      unreadNotifCount = notifCache.filter(n => !n.read).length;
-      updateNotifBadge();
-      if (document.getElementById('notif-overlay').style.display !== 'none') {
-        renderNotifList();
-      }
+    .onSnapshot(processSnap, () => {
+      // Index not ready — use simpler query and sort client-side
+      notifsRef()
+        .where('toUid', '==', currentUser.uid)
+        .limit(40)
+        .onSnapshot(processSnap);
     });
 }
 
 function updateNotifBadge() {
-  ['desktopNotifBadge','mobNotifBadge'].forEach(id => {
+  const count = unreadNotifCount;
+  ['desktopNotifBadge'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    if (unreadNotifCount > 0) {
-      el.textContent = unreadNotifCount > 9 ? '9+' : unreadNotifCount;
-      el.style.display = 'inline-flex';
-    } else {
-      el.style.display = 'none';
-    }
+    el.textContent = count > 9 ? '9+' : count;
+    el.style.display = count > 0 ? 'inline-flex' : 'none';
   });
 
-  // Also update profile nav badge
-  const profBadge = document.getElementById('mobNotifBadge');
-  // Already handled above
+  // Mobile — update badge and label on the profile/notif button
+  const mobBadge = document.getElementById('mobNotifBadge');
+  const mobLabel = document.getElementById('profileNavLabel');
+  if (mobBadge) {
+    mobBadge.textContent = count > 9 ? '9+' : count;
+    mobBadge.style.display = count > 0 ? 'inline-flex' : 'none';
+  }
+  if (mobLabel) {
+    mobLabel.textContent = count > 0 ? `Notifs (${count})` : 'Profile';
+  }
 }
 
 function openNotifModal() {
