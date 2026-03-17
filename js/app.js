@@ -119,6 +119,9 @@ document.querySelectorAll('.mob-nav-btn[data-page]').forEach(btn => {
 
 // ── Garden open/exit ──────────────────────────────────────────────
 function openGardenPage(gardenId, gardenData, isOwn) {
+  // Always clean up previous garden first
+  exitGarden();
+
   currentGardenId = gardenId; currentGardenData = gardenData; isGardenOwner = isOwn;
   document.getElementById('gardenTitle').textContent = gardenData.name || 'Garden';
   document.getElementById('gardenOwnerBadge').textContent =
@@ -128,7 +131,6 @@ function openGardenPage(gardenId, gardenData, isOwn) {
   updateSeasonDisplay();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-garden').classList.add('active');
-  // Reset scroll on pages wrapper so garden fills correctly
   const pw = document.getElementById('pages-wrapper');
   if (pw) pw.scrollTop = 0;
   currentPage = 'garden';

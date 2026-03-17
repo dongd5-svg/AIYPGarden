@@ -1787,3 +1787,196 @@ body:has(#offline-banner[style*="flex"]) #app {
 @media (min-width: 768px) {
   #app-version { bottom: 0.4rem; }
 }
+
+/* ═══ SUB-GRID FEATURE ═══════════════════════════════════════════*/
+
+/* Sub-grid indicator dot on main grid tiles */
+.sg-indicator {
+  position: absolute; bottom: 3px; right: 3px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green-2); opacity: 0.8;
+  pointer-events: none;
+}
+.tile { position: relative; } /* ensure indicator positions correctly */
+
+/* Sub-grid panel */
+.subgrid-hint {
+  font-size: 0.8rem; color: var(--text-3);
+  margin: 0 0 0.8rem; line-height: 1.4;
+}
+.subgrid-header { padding-bottom: 0.5rem; }
+.subgrid-size-row {
+  display: flex; align-items: center; gap: 0.6rem;
+  margin-bottom: 0.8rem; flex-wrap: wrap;
+}
+.subgrid-size-row label {
+  font-size: 0.78rem; font-weight: 700;
+  color: var(--text-3); flex-shrink: 0;
+}
+.subgrid-size-btns { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+.sg-size-btn {
+  padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 700;
+  border: 1.5px solid var(--border-2); border-radius: var(--radius-sm);
+  background: var(--surface); cursor: pointer; font-family: var(--font);
+  transition: all 0.12s; color: var(--text-2);
+}
+.sg-size-btn:hover  { border-color: var(--green-3); color: var(--green-1); }
+.sg-size-btn.active { background: var(--green-2); border-color: var(--green-2); color: #fff; }
+
+/* Sub-grid container */
+.subgrid-container {
+  display: grid; gap: 3px;
+  width: 100%; aspect-ratio: 1;
+  max-height: 200px; margin-bottom: 0.8rem;
+  border: 1.5px solid var(--border-2); border-radius: var(--radius-sm);
+  overflow: hidden; background: var(--border);
+}
+.sg-cell {
+  background: #f0f7e8; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; transition: filter 0.12s;
+  min-width: 0; min-height: 0;
+  padding: 2px;
+}
+.sg-cell:hover { filter: brightness(0.88); }
+.sg-cell-label {
+  font-size: 0.6rem; font-weight: 700; color: var(--text-1);
+  text-align: center; line-height: 1.2;
+  overflow: hidden; word-break: break-word;
+  max-width: 100%;
+}
+.sg-cell-dot {
+  position: absolute; bottom: 2px; right: 2px;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--green-2); opacity: 0.7;
+}
+
+/* Sub-cell editor popup */
+.sg-cell-editor {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius-md); padding: 0.8rem;
+  box-shadow: var(--shadow-lg); width: 240px;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  z-index: 4000;
+}
+.sg-editor-title {
+  font-size: 0.75rem; font-weight: 800; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.sg-cell-editor input {
+  width: 100%; padding: 0.5rem 0.7rem;
+  border: 1.5px solid var(--border-2); border-radius: var(--radius-sm);
+  font-family: var(--font); font-size: 0.88rem;
+  box-sizing: border-box; background: var(--bg);
+}
+.sg-cell-editor input:focus { outline: none; border-color: var(--green-3); }
+.sg-color-row {
+  display: flex; flex-wrap: wrap; gap: 0.3rem;
+}
+.sg-color-swatch {
+  width: 20px; height: 20px; border-radius: 4px;
+  border: 2px solid transparent; cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s;
+}
+.sg-color-swatch:hover  { transform: scale(1.15); }
+.sg-color-swatch.selected { border-color: var(--text-1); transform: scale(1.1); }
+.sg-editor-actions { display: flex; gap: 0.5rem; }
+.sg-editor-actions .btn { flex: 1; font-size: 0.82rem; padding: 0.45rem; }
+
+/* Sub-grid save/clear buttons */
+.subgrid-actions { display: flex; gap: 0.5rem; }
+.subgrid-actions .btn { flex: 1; }
+
+/* ═══ PER-TILE SHAPE + PLOT PANEL ════════════════════════════════*/
+.sg-section-title {
+  font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-3);
+  margin: 0.8rem 0 0.5rem;
+}
+
+/* Shape selector grid */
+.shape-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.shape-btn {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius-md); padding: 0.55rem 0.3rem 0.45rem;
+  cursor: pointer; display: flex; flex-direction: column;
+  align-items: center; gap: 0.25rem;
+  transition: all 0.15s; font-family: var(--font);
+}
+.shape-btn:hover  { border-color: var(--green-3); background: var(--green-6); }
+.shape-btn.active { border-color: var(--green-2); background: var(--green-6); box-shadow: 0 0 0 2px var(--green-4); }
+.shape-btn .shape-icon  { font-size: 1.3rem; line-height: 1; }
+.shape-btn .shape-label { font-size: 0.65rem; font-weight: 700; color: var(--text-2); white-space: nowrap; }
+
+/* Dimension inputs row */
+.sg-dims-row {
+  display: flex; gap: 0.5rem; align-items: flex-end;
+  margin-bottom: 0.6rem; flex-wrap: wrap;
+}
+.sg-dim-field {
+  display: flex; flex-direction: column; gap: 0.25rem;
+  flex: 1; min-width: 60px;
+}
+.sg-dim-field label {
+  font-size: 0.72rem; font-weight: 700; color: var(--text-3);
+}
+.sg-dim-field input,
+.sg-dim-field select {
+  width: 100%; padding: 0.4rem 0.5rem;
+  border: 1.5px solid var(--border-2); border-radius: var(--radius-sm);
+  font-family: var(--font); font-size: 0.85rem;
+  background: var(--bg); box-sizing: border-box; color: var(--text-1);
+}
+.sg-dim-field input:focus,
+.sg-dim-field select:focus { outline: none; border-color: var(--green-3); }
+
+/* SVG shape diagram */
+.shape-diagram {
+  display: flex; align-items: center; justify-content: center;
+  margin: 0.2rem auto 0.6rem;
+  width: 100%; max-width: 180px; height: 150px;
+}
+
+/* Sub-cell editor — inline below subgrid */
+.sg-cell-editor {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius-md); padding: 0.8rem;
+  box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; gap: 0.5rem;
+  margin-top: 0.6rem;
+  z-index: 4000;
+}
+.sg-cell-editor-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sg-cell-editor input {
+  width: 100%; padding: 0.5rem 0.7rem;
+  border: 1.5px solid var(--border-2); border-radius: var(--radius-sm);
+  font-family: var(--font); font-size: 0.88rem;
+  box-sizing: border-box; background: var(--bg);
+}
+.sg-cell-editor input:focus { outline: none; border-color: var(--green-3); }
+.sg-color-row { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.sg-color-swatch {
+  width: 22px; height: 22px; border-radius: 4px;
+  border: 2px solid transparent; cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s;
+}
+.sg-color-swatch:hover   { transform: scale(1.15); }
+.sg-color-swatch.selected { border-color: var(--text-1); transform: scale(1.1); }
+.sg-cell-editor-actions { display: flex; gap: 0.5rem; }
+.sg-cell-editor-actions .btn { flex: 1; font-size: 0.82rem; padding: 0.45rem; }
+
+/* Close button inside editor header */
+.modal-close-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 0.9rem; color: var(--text-3); padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+}
+.modal-close-btn:hover { background: var(--bg); color: var(--text-1); }
+

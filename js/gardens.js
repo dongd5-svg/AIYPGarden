@@ -153,13 +153,35 @@ const gridColsInput    = document.getElementById('gridCols');
 const gridPreviewEl    = document.getElementById('gridPreview');
 const gridPreviewLabel = document.getElementById('gridPreviewLabel');
 let selectedVisibility = 'private';
+let selectedShape      = 'square';
+
+// ── Shape definitions ─────────────────────────────────────────────
+// Each shape defines rows, cols, and optionally a set of disabled
+// tile IDs (rRcC format) that are "inactive" (hollow area)
+const GARDEN_SHAPES = {
+  square:  { rows: 6,  cols: 6,  label: '6×6',    disabled: [] },
+  wide:    { rows: 4,  cols: 10, label: '4×10',   disabled: [] },
+  tall:    { rows: 10, cols: 4,  label: '10×4',   disabled: [] },
+  tower:   { rows: 12, cols: 2,  label: '12×2',   disabled: [] },
+  strip:   { rows: 2,  cols: 10, label: '2×10',   disabled: [] },
+  lshape:  { rows: 6,  cols: 6,  label: 'L-shape',
+    disabled: ['r0c3','r0c4','r0c5','r1c3','r1c4','r1c5','r2c3','r2c4','r2c5'] },
+  ushape:  { rows: 6,  cols: 6,  label: 'U-shape',
+    disabled: ['r0c2','r0c3','r1c2','r1c3','r2c2','r2c3','r3c2','r3c3'] },
+  custom:  { rows: 6,  cols: 6,  label: 'Custom',  disabled: [] },
+};
 
 function openCreateModal() {
   gardenNameInput.value = '';
-  gridRowsInput.value = '6'; gridColsInput.value = '6';
-  selectedVisibility = 'private';
+  gridRowsInput.value   = '6';
+  gridColsInput.value   = '6';
+  selectedVisibility    = 'private';
+  selectedShape         = 'square';
   document.getElementById('visPrivate').classList.add('active');
   document.getElementById('visPublic').classList.remove('active');
+  document.querySelectorAll('.shape-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.shape === 'square'));
+  document.getElementById('customSizeInputs').style.display = 'none';
   updateGridPreview();
   createOverlay.classList.add('open');
   setTimeout(() => gardenNameInput.focus(), 200);
@@ -170,10 +192,28 @@ createOverlay.addEventListener('click', e => {
   if (e.target === createOverlay) createOverlay.classList.remove('open');
 });
 
+// Shape picker
+document.querySelectorAll('.shape-btn').forEach(btn => {
+  btn.onclick = () => {
+    selectedShape = btn.dataset.shape;
+    document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const shape = GARDEN_SHAPES[selectedShape];
+    const isCustom = selectedShape === 'custom';
+    document.getElementById('customSizeInputs').style.display = isCustom ? 'block' : 'none';
+    if (!isCustom) {
+      gridRowsInput.value = shape.rows;
+      gridColsInput.value = shape.cols;
+    }
+    updateGridPreview();
+  };
+});
+
+// Custom size steppers
 document.querySelectorAll('.stepper-btn').forEach(btn => {
   btn.onclick = () => {
     const t = document.getElementById(btn.dataset.target);
-    t.value = Math.min(+t.max||20, Math.max(+t.min||2, +t.value + +btn.dataset.dir));
+    t.value = Math.min(+t.max||20, Math.max(+t.min||1, +t.value + +btn.dataset.dir));
     updateGridPreview();
   };
 });
@@ -181,17 +221,33 @@ gridRowsInput.addEventListener('input', updateGridPreview);
 gridColsInput.addEventListener('input', updateGridPreview);
 
 function updateGridPreview() {
-  const r = Math.min(20, Math.max(2, +gridRowsInput.value || 6));
-  const c = Math.min(20, Math.max(2, +gridColsInput.value || 6));
-  gridPreviewEl.style.gridTemplateColumns = `repeat(${Math.min(c,16)},1fr)`;
-  gridPreviewEl.style.gridTemplateRows    = `repeat(${Math.min(r,16)},1fr)`;
+  const shape    = GARDEN_SHAPES[selectedShape] || GARDEN_SHAPES.custom;
+  const r        = Math.min(20, Math.max(1, +gridRowsInput.value || shape.rows));
+  const c        = Math.min(20, Math.max(1, +gridColsInput.value || shape.cols));
+  const disabled = new Set(shape.disabled || []);
+
+  const dispR = Math.min(r, 12);
+  const dispC = Math.min(c, 12);
+  gridPreviewEl.style.gridTemplateColumns = `repeat(${dispC},1fr)`;
+  gridPreviewEl.style.gridTemplateRows    = `repeat(${dispR},1fr)`;
   gridPreviewEl.innerHTML = '';
-  for (let i = 0; i < Math.min(r,16)*Math.min(c,16); i++) {
-    const cell = document.createElement('div');
-    cell.className = 'preview-cell';
-    gridPreviewEl.appendChild(cell);
+
+  let activePlots = 0;
+  for (let ri = 0; ri < dispR; ri++) {
+    for (let ci = 0; ci < dispC; ci++) {
+      const cell = document.createElement('div');
+      const id   = `r${ri}c${ci}`;
+      if (disabled.has(id)) {
+        cell.className = 'preview-cell preview-cell-disabled';
+      } else {
+        cell.className = 'preview-cell';
+        activePlots++;
+      }
+      gridPreviewEl.appendChild(cell);
+    }
   }
-  gridPreviewLabel.textContent = `${r*c} plot${r*c !== 1 ? 's' : ''}`;
+  const totalPlots = r * c - disabled.size;
+  gridPreviewLabel.textContent = `${totalPlots} plot${totalPlots !== 1 ? 's' : ''}`;
 }
 
 document.getElementById('visPrivate').onclick = () => setVis('private');
@@ -205,14 +261,19 @@ function setVis(v) {
 document.getElementById('confirmCreateGardenBtn').onclick = async () => {
   const name = gardenNameInput.value.trim();
   if (!name) { gardenNameInput.focus(); return; }
-  const rows = Math.min(20, Math.max(2, +gridRowsInput.value || 6));
-  const cols = Math.min(20, Math.max(2, +gridColsInput.value || 6));
+
+  const shape = GARDEN_SHAPES[selectedShape] || GARDEN_SHAPES.custom;
+  const rows  = Math.min(20, Math.max(1, +gridRowsInput.value || shape.rows));
+  const cols  = Math.min(20, Math.max(1, +gridColsInput.value || shape.cols));
+  const disabledTiles = shape.disabled || [];
 
   const btn = document.getElementById('confirmCreateGardenBtn');
   btn.disabled = true;
   try {
-    const docRef = await db.collection('gardens').add({
+    const gardenDoc = {
       name, rows, cols,
+      shape:              selectedShape,
+      disabledTiles,
       ownerId:            currentUser.uid,
       ownerName:          currentUser.displayName || currentUser.email,
       ownerEmail:         currentUser.email,
@@ -225,11 +286,11 @@ document.getElementById('confirmCreateGardenBtn').onclick = async () => {
       currentSeason:      'spring',
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    };
+    const docRef = await db.collection('gardens').add(gardenDoc);
     createOverlay.classList.remove('open');
     showToast('Garden created! 🌱');
-    openGardenPage(docRef.id, {
-      name, rows, cols,
+    openGardenPage(docRef.id, { ...gardenDoc }, true);
       ownerId: currentUser.uid,
       visibility: selectedVisibility,
       publicPermission: 'viewonly',

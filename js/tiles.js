@@ -83,16 +83,27 @@ document.querySelectorAll('.season-btn').forEach(btn => {
 // ── Render grid ───────────────────────────────────────────────────
 function renderGrid() {
   if (!currentGardenData) return;
-  const garden = document.getElementById('garden-container');
-  const rows   = currentGardenData.rows || 6;
-  const cols   = currentGardenData.cols || 6;
-  garden.innerHTML = '';
+  const garden       = document.getElementById('garden-container');
+  const rows         = currentGardenData.rows || 6;
+  const cols         = currentGardenData.cols || 6;
+  const disabledSet  = new Set(currentGardenData.disabledTiles || []);
+  garden.innerHTML   = '';
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const id = `r${r}c${c}`;
-      const d  = tilesData[id] || {};
+      const id  = `r${r}c${c}`;
       const div = document.createElement('div');
+
+      // Disabled tile — render as a hollow inactive cell
+      if (disabledSet.has(id)) {
+        div.className      = 'tile tile-disabled';
+        div.dataset.id     = id;
+        div.style.cursor   = 'default';
+        garden.appendChild(div);
+        continue;
+      }
+
+      const d = tilesData[id] || {};
       div.className  = 'tile';
       div.dataset.id = id;
 
@@ -144,6 +155,9 @@ function renderGrid() {
   }
 
   if (mergeMode) applyMergeModeUI();
+
+  // Show sub-grid indicators on tiles that have sub-grid data
+  if (typeof applySubgridIndicators === 'function') applySubgridIndicators();
 }
 
 // ── Task priority color on tile ───────────────────────────────────
@@ -232,6 +246,9 @@ function openPanel(id) {
   switchPanelTab('plot');
   refreshTileTasksList(id);
   refreshPhotoTimeline(id);
+
+  // Load sub-grid data (used if user switches to Sub-grid tab)
+  if (typeof loadSubgridForTile === 'function') loadSubgridForTile(id);
 }
 
 function handleTileClick(id) {
@@ -240,24 +257,26 @@ function handleTileClick(id) {
 }
 
 // ── Panel tabs ────────────────────────────────────────────────────
-document.getElementById('tabPlot').onclick    = () => switchPanelTab('plot');
-document.getElementById('tabTasks').onclick   = () => switchPanelTab('tasks');
-document.getElementById('tabHistory').onclick = () => switchPanelTab('history');
+document.getElementById('tabPlot').onclick     = () => switchPanelTab('plot');
+document.getElementById('tabTasks').onclick    = () => switchPanelTab('tasks');
+document.getElementById('tabHistory').onclick  = () => switchPanelTab('history');
+document.getElementById('tabSubgrid').onclick  = () => switchPanelTab('subgrid');
 
 function switchPanelTab(tab) {
-  ['plot','tasks','history'].forEach(t => {
-    document.getElementById('panelPlot')   .style.display = t === 'plot'    && tab === 'plot'    ? 'block' : 'none';
-    document.getElementById('panelTasks')  .style.display = t === 'tasks'   && tab === 'tasks'   ? 'block' : 'none';
-    document.getElementById('panelHistory').style.display = t === 'history' && tab === 'history' ? 'block' : 'none';
-  });
-  document.getElementById('panelPlot').style.display    = tab === 'plot'    ? 'block' : 'none';
-  document.getElementById('panelTasks').style.display   = tab === 'tasks'   ? 'block' : 'none';
+  document.getElementById('panelPlot')   .style.display = tab === 'plot'    ? 'block' : 'none';
+  document.getElementById('panelTasks')  .style.display = tab === 'tasks'   ? 'block' : 'none';
   document.getElementById('panelHistory').style.display = tab === 'history' ? 'block' : 'none';
-  document.getElementById('tabPlot').classList.toggle('active',    tab === 'plot');
-  document.getElementById('tabTasks').classList.toggle('active',   tab === 'tasks');
+  document.getElementById('panelSubgrid').style.display = tab === 'subgrid' ? 'block' : 'none';
+  document.getElementById('tabPlot')   .classList.toggle('active', tab === 'plot');
+  document.getElementById('tabTasks')  .classList.toggle('active', tab === 'tasks');
   document.getElementById('tabHistory').classList.toggle('active', tab === 'history');
-  if (tab === 'tasks' && activeId)   refreshTileTasksList(activeId);
+  document.getElementById('tabSubgrid').classList.toggle('active', tab === 'subgrid');
+  if (tab === 'tasks'   && activeId) refreshTileTasksList(activeId);
   if (tab === 'history' && activeId) refreshPhotoTimeline(activeId);
+  if (tab === 'subgrid' && activeId && typeof initSubgridPanel === 'function') {
+    initSubgridPanel(activeId, false);
+    wireDimInputs('');
+  }
 }
 
 // ── Tile ref helper ───────────────────────────────────────────────
@@ -610,43 +629,42 @@ mergeCancelBtn.onclick = () => toggleMergeMode(false);
     mImg.value=d.imageUrl||''; mColor.value=d.color||'#e8ffd6';
     if (mSplit) mSplit.style.display = d.mergeGroup ? 'inline-block' : 'none';
     // Switch to plot tab
-    ['mPanelPlot','mPanelTasks','mPanelHistory'].forEach(id =>
+    ['mPanelPlot','mPanelTasks','mPanelHistory','mPanelSubgrid'].forEach(id =>
       document.getElementById(id).style.display = 'none');
     document.getElementById('mPanelPlot').style.display = 'block';
-    ['mTabPlot','mTabTasks','mTabHistory'].forEach(id =>
+    ['mTabPlot','mTabTasks','mTabHistory','mTabSubgrid'].forEach(id =>
       document.getElementById(id).classList.remove('active'));
     document.getElementById('mTabPlot').classList.add('active');
     overlay.classList.add('open');
   };
 
-  document.getElementById('mTabPlot').onclick = () => {
-    document.getElementById('mPanelPlot').style.display='block';
-    document.getElementById('mPanelTasks').style.display='none';
-    document.getElementById('mPanelHistory').style.display='none';
-    document.getElementById('mTabPlot').classList.add('active');
-    document.getElementById('mTabTasks').classList.remove('active');
-    document.getElementById('mTabHistory').classList.remove('active');
-  };
-  document.getElementById('mTabTasks').onclick = () => {
-    document.getElementById('mPanelPlot').style.display='none';
-    document.getElementById('mPanelTasks').style.display='block';
-    document.getElementById('mPanelHistory').style.display='none';
-    document.getElementById('mTabPlot').classList.remove('active');
-    document.getElementById('mTabTasks').classList.add('active');
-    document.getElementById('mTabHistory').classList.remove('active');
+  function switchMobileTab(tab) {
+    ['mPanelPlot','mPanelTasks','mPanelHistory','mPanelSubgrid'].forEach(id =>
+      document.getElementById(id).style.display = 'none');
+    ['mTabPlot','mTabTasks','mTabHistory','mTabSubgrid'].forEach(id =>
+      document.getElementById(id).classList.remove('active'));
+    document.getElementById(`mPanel${tab.charAt(0).toUpperCase()+tab.slice(1)}`).style.display = 'block';
+    document.getElementById(`mTab${tab.charAt(0).toUpperCase()+tab.slice(1)}`).classList.add('active');
+  }
+
+  document.getElementById('mTabPlot').onclick    = () => switchMobileTab('plot');
+  document.getElementById('mTabTasks').onclick   = () => {
+    switchMobileTab('tasks');
     if (activeId) {
       document.getElementById('mTasksTileLabel').textContent = (tilesData[activeId]||{}).title||'This plot';
       refreshTileTasksList(activeId);
     }
   };
   document.getElementById('mTabHistory').onclick = () => {
-    document.getElementById('mPanelPlot').style.display='none';
-    document.getElementById('mPanelTasks').style.display='none';
-    document.getElementById('mPanelHistory').style.display='block';
-    document.getElementById('mTabPlot').classList.remove('active');
-    document.getElementById('mTabTasks').classList.remove('active');
-    document.getElementById('mTabHistory').classList.add('active');
+    switchMobileTab('history');
     if (activeId) refreshPhotoTimeline(activeId);
+  };
+  document.getElementById('mTabSubgrid').onclick = () => {
+    switchMobileTab('subgrid');
+    if (activeId && typeof initSubgridPanel === 'function') {
+      initSubgridPanel(activeId, true);
+      wireDimInputs('m');
+    }
   };
   document.getElementById('mAddTaskBtn').onclick  = () => openTaskModal(null, activeId);
   document.getElementById('mAddPhotoBtn').onclick = () => openPhotoModal(activeId);
