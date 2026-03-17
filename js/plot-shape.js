@@ -319,7 +319,13 @@ function openSgCellEditor(key, p) {
 
 // ── Save / Clear ──────────────────────────────────────────────────
 async function saveSubgrid(isMobile) {
-  if (!sgTileId || !currentGardenId) return;
+  if (!sgTileId || !currentGardenId) {
+    showToast('No tile selected', 'error'); return;
+  }
+  // Check permission before even trying
+  if (typeof canEditTiles === 'function' && !canEditTiles()) {
+    showToast('You don\'t have edit permission for this garden', 'error'); return;
+  }
   var p   = isMobile ? 'm' : '';
   var wIn = document.getElementById(p + 'SgWidth');
   var lIn = document.getElementById(p + 'SgLength');
@@ -348,7 +354,14 @@ async function saveSubgrid(isMobile) {
         updatedAt:    firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
     showToast('Plot saved \uD83D\uDD32');
-  } catch(e) { console.error('saveSubgrid error:', e); showToast('Save failed', 'error'); }
+  } catch(e) {
+    console.error('saveSubgrid error:', e.code, e.message);
+    if (e.code === 'permission-denied') {
+      showToast('Permission denied — are you the garden owner?', 'error');
+    } else {
+      showToast('Save failed: ' + e.message, 'error');
+    }
+  }
 }
 
 async function clearSubgrid(isMobile) {
