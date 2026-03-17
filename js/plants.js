@@ -60,26 +60,33 @@ const PLANT_DB = {
 };
 
 // ── OpenFarm API search ───────────────────────────────────────────
+// NOTE: OpenFarm blocks CORS from GitHub Pages — only call for
+// genuine plant names not already in local DB
 const OPENFARM_BASE = 'https://openfarm.cc/api/v1/crops';
 
 async function searchOpenFarm(query) {
+  // Don't call OpenFarm for obvious non-plant names
+  // (numbers, emojis, short codes, non-alphabetic strings)
+  if (!query || query.length < 3) return null;
+  if (/^\d+$/.test(query)) return null; // pure numbers
+  if (!/[a-zA-Z]{3,}/.test(query)) return null; // no real word
+
   try {
     const res = await fetch(`${OPENFARM_BASE}/?filter=${encodeURIComponent(query)}&limit=5`);
     if (!res.ok) return null;
     const json = await res.json();
     if (!json.data || json.data.length === 0) return null;
-    // Return top result formatted
     const c = json.data[0].attributes;
     return {
-      name:       c.name || query,
-      sun:        c.sun_requirements || 'Unknown',
-      water:      c.water_requirements || 'Unknown',
-      days:       c.growing_degree_days || null,
-      spacing:    c.spread ? `${c.spread}"` : 'Unknown',
+      name:        c.name || query,
+      sun:         c.sun_requirements || 'Unknown',
+      water:       c.water_requirements || 'Unknown',
+      days:        c.growing_degree_days || null,
+      spacing:     c.spread ? `${c.spread}"` : 'Unknown',
       description: c.description || '',
-      companions: (c.companions || []).map(x => x.toLowerCase()),
-      avoid:      [],
-      source:     'OpenFarm'
+      companions:  (c.companions || []).map(x => x.toLowerCase()),
+      avoid:       [],
+      source:      'OpenFarm'
     };
   } catch {
     return null;
@@ -87,16 +94,21 @@ async function searchOpenFarm(query) {
 }
 
 // ── Main plant lookup ─────────────────────────────────────────────
-// Returns plant data: first tries local DB, then OpenFarm
 async function lookupPlant(name) {
   if (!name) return null;
   const key = name.trim().toLowerCase();
-  // Local DB first (instant)
+
+  // Skip obvious non-plant tile names
+  if (key.length < 2) return null;
+  if (/^\d+$/.test(key)) return null;
+  if (!/[a-zA-Z]{2,}/.test(key)) return null;
+
+  // Local DB first (instant, no network)
   if (PLANT_DB[key]) return { ...PLANT_DB[key], source: 'local' };
-  // Try partial match
   const partial = Object.keys(PLANT_DB).find(k => k.includes(key) || key.includes(k));
   if (partial) return { ...PLANT_DB[partial], source: 'local' };
-  // OpenFarm fallback
+
+  // Only call OpenFarm if not found locally and name looks like a real plant
   return await searchOpenFarm(name);
 }
 
@@ -258,37 +270,46 @@ async function checkCompanion(plantA, plantB) {
 
 // Build companion status map for all tiles (called by tiles.js renderGrid)
 // Returns map: tileId -> 'good'|'bad'|'neutral'
+// Uses LOCAL database only for companion checks to avoid hundreds of API calls
 async function buildCompanionMap(tilesData, rows, cols) {
   const map = {};
-  const checks = [];
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const id  = `r${r}c${c}`;
-      const d   = tilesData[id] || {};
+      const id = `r${r}c${c}`;
+      const d  = tilesData[id] || {};
       if (!d.title) continue;
 
       const neighbors = [];
-      if (r > 0)       neighbors.push(tilesData[`r${r-1}c${c}`]?.title);
-      if (r < rows-1)  neighbors.push(tilesData[`r${r+1}c${c}`]?.title);
-      if (c > 0)       neighbors.push(tilesData[`r${r}c${c-1}`]?.title);
-      if (c < cols-1)  neighbors.push(tilesData[`r${r}c${c+1}`]?.title);
+      if (r > 0)      neighbors.push(tilesData[`r${r-1}c${c}`]?.title);
+      if (r < rows-1) neighbors.push(tilesData[`r${r+1}c${c}`]?.title);
+      if (c > 0)      neighbors.push(tilesData[`r${r}c${c-1}`]?.title);
+      if (c < cols-1) neighbors.push(tilesData[`r${r}c${c+1}`]?.title);
 
       const validNeighbors = neighbors.filter(Boolean);
-      if (validNeighbors.length === 0) continue;
+      if (!validNeighbors.length) continue;
 
-      checks.push(
-        Promise.all(validNeighbors.map(n => checkCompanion(d.title, n)))
-          .then(results => {
-            if (results.some(r => r.status === 'bad'))  map[id] = 'bad';
-            else if (results.some(r => r.status === 'good')) map[id] = 'good';
-            else map[id] = 'neutral';
-          })
-      );
+      // Use local-only lookup for companion map (no API calls)
+      const key = d.title.trim().toLowerCase();
+      const localData = PLANT_DB[key] ||
+        PLANT_DB[Object.keys(PLANT_DB).find(k => k.includes(key) || key.includes(k))];
+
+      if (!localData) { map[id] = 'neutral'; continue; }
+
+      let status = 'neutral';
+      for (const neighborName of validNeighbors) {
+        const nKey = neighborName.trim().toLowerCase();
+        if (localData.avoid?.some(a => nKey.includes(a) || a.includes(nKey))) {
+          status = 'bad'; break;
+        }
+        if (localData.companions?.some(a => nKey.includes(a) || a.includes(nKey))) {
+          if (status !== 'bad') status = 'good';
+        }
+      }
+      map[id] = status;
     }
   }
 
-  await Promise.all(checks);
   return map;
 }
 
