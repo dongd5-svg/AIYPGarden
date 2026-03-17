@@ -332,8 +332,10 @@ document.getElementById('splitBtn').onclick = async () => {
 };
 
 // ── Upload btn ────────────────────────────────────────────────────
-document.getElementById('tileUploadBtn').onclick       = () => uploadTileImage(false);
-document.getElementById('modal-tileUploadBtn').onclick = () => uploadTileImage(true);
+const _tileUploadBtn      = document.getElementById('tileUploadBtn');
+const _modalTileUploadBtn = document.getElementById('modal-tileUploadBtn');
+if (_tileUploadBtn)      _tileUploadBtn.onclick      = () => uploadTileImage(false);
+if (_modalTileUploadBtn) _modalTileUploadBtn.onclick  = () => uploadTileImage(true);
 
 async function uploadTileImage(isMobile) {
   const btn     = document.getElementById(isMobile ? 'modal-tileUploadBtn' : 'tileUploadBtn');

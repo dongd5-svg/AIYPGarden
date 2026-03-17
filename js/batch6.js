@@ -7,7 +7,9 @@
 // ════════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
+    // Use relative path so it works on GitHub Pages subdirectories
+    const swPath = new URL('service-worker.js', window.location.href).href;
+    navigator.serviceWorker.register(swPath)
       .then(reg => console.log('SW registered:', reg.scope))
       .catch(err => console.warn('SW registration failed:', err));
   });
