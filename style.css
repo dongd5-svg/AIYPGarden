@@ -193,7 +193,13 @@ body {
 .ob-size-x { font-size: 1.4rem; color: var(--text-4); }
 
 /* ═══ APP SHELL ══════════════════════════════════════════════════*/
-#app { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+#app {
+  min-height: 100dvh;
+  min-height: 100vh; /* fallback */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
 /* Desktop nav */
 #main-nav {
@@ -255,7 +261,11 @@ body {
 
 /* Pages wrapper */
 #pages-wrapper {
-  flex: 1; min-height: 0; position: relative; overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  height: calc(100vh - var(--nav-h));
 }
 .page {
   display: none; position: absolute; inset: 0;
@@ -904,6 +914,11 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 2px solid #e67e00 !im
 
   body { overflow: hidden; }
   #app { padding-bottom: 0; }
+
+  /* Pages wrapper takes full height minus mobile nav */
+  #pages-wrapper {
+    height: calc(100vh - var(--mob-nav-h));
+  }
 
   .garden-page-header { padding: 0 0.6rem; min-height: 50px; }
   .garden-title-area h1 { font-size: 1rem; }
