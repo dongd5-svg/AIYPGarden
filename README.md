@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Ants In Your Plants"/>
+  <meta name="theme-color" content="#3d7035"/>
+  <meta name="description" content="Plan, track, and grow your best garden yet."/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <title>Ants In Your Plants</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Schoolbell&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<!-- Offline indicator -->
+<div id="offline-banner" style="display:none">
+  <span>📵 You're offline — changes will sync when reconnected</span>
+</div>
+
+<!-- ═══ ONBOARDING ═══ -->
+<div id="onboarding" style="display:none">
+
+  <!-- Step 0: Login -->
+  <div class="ob-screen active" id="ob-login">
+    <div class="ob-bg"></div>
+    <div class="ob-login-card">
+      <div class="ob-logo">🌿</div>
+      <h1 class="ob-title">Ants In Your Plants</h1>
+      <p class="ob-sub">Plan, track, and grow your best garden yet</p>
+      <button id="googleBtn" class="ob-google-btn">
+        <svg width="20" height="20" viewBox="0 0 18 18"><path fill="#fff" d="M9 3.48c1.69 0 2.83.73 3.48 1.34l2.54-2.48C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l2.91 2.26C4.6 5.05 6.62 3.48 9 3.48z"/><path fill="#fff" d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.1.83-.64 2.08-1.84 2.92l2.84 2.2c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#fff" d="M3.88 10.78A5.54 5.54 0 0 1 3.58 9c0-.62.11-1.22.29-1.78L.96 4.96A9.008 9.008 0 0 0 0 9c0 1.45.35 2.82.96 4.04l2.92-2.26z"/><path fill="#fff" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.84-2.2c-.76.53-1.78.9-3.12.9-2.38 0-4.4-1.57-5.12-3.74L.97 13.04C2.45 15.98 5.48 18 9 18z"/></svg>
+        Continue with Google
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 1: Mode picker -->
+  <div class="ob-screen" id="ob-mode">
+    <div class="ob-step-header">
+      <div class="ob-step-dots">
+        <span class="ob-dot active"></span><span class="ob-dot"></span><span class="ob-dot"></span>
+      </div>
+      <button class="ob-skip" id="skipModeBtn">Skip</button>
+    </div>
+    <div class="ob-content">
+      <h2>How do you want to use<br>the app?</h2>
+      <p class="ob-sub">You can always change this in settings</p>
+      <div class="mode-cards">
+        <div class="mode-card" data-mode="simple">
+          <div class="mode-emoji">🌱</div>
+          <div class="mode-name">Simple</div>
+          <div class="mode-desc">Garden grid, basic tasks, and weather. Perfect for getting started.</div>
+          <ul class="mode-features">
+            <li>✓ Garden grid</li>
+            <li>✓ Basic tasks</li>
+            <li>✓ Weather</li>
+            <li>✓ Plant lookup</li>
+          </ul>
+        </div>
+        <div class="mode-card selected" data-mode="standard">
+          <div class="mode-badge">Most popular</div>
+          <div class="mode-emoji">🌿</div>
+          <div class="mode-name">Standard</div>
+          <div class="mode-desc">Everything in Simple plus planning tools and tracking.</div>
+          <ul class="mode-features">
+            <li>✓ Everything in Simple</li>
+            <li>✓ Harvest & spending log</li>
+            <li>✓ Calendar & journal</li>
+            <li>✓ Frost date alerts</li>
+            <li>✓ Plant care reminders</li>
+          </ul>
+        </div>
+        <div class="mode-card" data-mode="advanced">
+          <div class="mode-emoji">🌳</div>
+          <div class="mode-name">Advanced</div>
+          <div class="mode-desc">Full toolkit for experienced gardeners who track everything.</div>
+          <ul class="mode-features">
+            <li>✓ Everything in Standard</li>
+            <li>✓ Crop rotation tracker</li>
+            <li>✓ Seed inventory</li>
+            <li>✓ Soil amendment log</li>
+            <li>✓ Pest & disease log</li>
+            <li>✓ Yield analytics</li>
+          </ul>
+        </div>
+      </div>
+      <button class="ob-next-btn" id="confirmModeBtn">Continue →</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Location for frost dates -->
+  <div class="ob-screen" id="ob-location">
+    <div class="ob-step-header">
+      <div class="ob-step-dots">
+        <span class="ob-dot"></span><span class="ob-dot active"></span><span class="ob-dot"></span>
+      </div>
+      <button class="ob-skip" id="skipLocationBtn">Skip</button>
+    </div>
+    <div class="ob-content">
+      <div class="ob-icon-big">🌡️</div>
+      <h2>Where is your garden?</h2>
+      <p class="ob-sub">We'll use this to show frost date alerts and personalise plant care reminders</p>
+      <div class="ob-location-options">
+        <button class="ob-loc-btn" id="detectLocationBtn">📍 Detect my location</button>
+        <div class="ob-or">or enter your zip / postal code</div>
+        <div class="field">
+          <input id="zipInput" type="text" placeholder="e.g. 90210 or SW1A 1AA" maxlength="10"/>
+        </div>
+      </div>
+      <div id="locationStatus" class="location-status" style="display:none"></div>
+      <button class="ob-next-btn" id="confirmLocationBtn">Continue →</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Create first garden -->
+  <div class="ob-screen" id="ob-garden">
+    <div class="ob-step-header">
+      <div class="ob-step-dots">
+        <span class="ob-dot"></span><span class="ob-dot"></span><span class="ob-dot active"></span>
+      </div>
+      <button class="ob-skip" id="skipGardenBtn">Do this later</button>
+    </div>
+    <div class="ob-content">
+      <div class="ob-icon-big">🪴</div>
+      <h2>Create your first garden</h2>
+      <p class="ob-sub">Give it a name and choose a size</p>
+      <div class="field">
+        <input id="ob-gardenName" type="text" placeholder="e.g. Backyard Beds" maxlength="50"/>
+      </div>
+      <div class="ob-size-row">
+        <div class="ob-size-group">
+          <label>Rows</label>
+          <div class="size-stepper">
+            <button class="stepper-btn" data-target="ob-rows" data-dir="-1">−</button>
+            <input id="ob-rows" type="number" min="2" max="20" value="6"/>
+            <button class="stepper-btn" data-target="ob-cols" data-dir="1">＋</button>
+          </div>
+        </div>
+        <div class="ob-size-x">×</div>
+        <div class="ob-size-group">
+          <label>Cols</label>
+          <div class="size-stepper">
+            <button class="stepper-btn" data-target="ob-cols" data-dir="-1">−</button>
+            <input id="ob-cols" type="number" min="2" max="20" value="6"/>
+            <button class="stepper-btn" data-target="ob-cols" data-dir="1">＋</button>
+          </div>
+        </div>
+      </div>
+      <button class="ob-next-btn" id="createFirstGardenBtn">Create & Start Growing 🌱</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app" style="display:none">
+
+  <!-- Top bar (desktop only — hidden on mobile) -->
+  <nav id="main-nav">
+    <div class="nav-logo" id="navLogo">🌿 Ants In Your Plants</div>
+    <div class="nav-links">
+      <button class="nav-btn active" data-page="home">🌱 My Gardens</button>
+      <button class="nav-btn" data-page="public">🌍 Explore</button>
+      <button class="nav-btn" data-page="calendar">📅 Calendar</button>
+    </div>
+    <div class="nav-user">
+      <button class="nav-icon-btn" id="desktopMessagesBtn" title="Messages">
+        💬<span class="nav-badge" id="desktopMsgBadge" style="display:none"></span>
+      </button>
+      <button class="nav-icon-btn" id="desktopNotifBtn" title="Notifications">
+        🔔<span class="nav-badge" id="desktopNotifBadge" style="display:none"></span>
+      </button>
+      <div class="profile-image-container" id="profileAvatarBtn">
+        <img id="profileImg" src="" alt="Profile" class="profile-image"/>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Pages -->
+  <div id="pages-wrapper">
+
+    <!-- HOME -->
+    <div id="page-home" class="page active">
+      <div id="weatherWidget" class="weather-widget" style="display:none"></div>
+
+      <!-- Frost alert banner -->
+      <div id="frostBanner" class="frost-banner" style="display:none"></div>
+
+      <div class="page-header">
+        <div>
+          <h1>My Gardens</h1>
+          <p class="page-subtitle" id="homeGreeting">Good morning 🌤</p>
+        </div>
+        <button class="btn-create" id="createGardenBtn">＋ New Garden</button>
+      </div>
+      <div id="my-gardens-grid" class="gardens-grid"></div>
+      <div id="empty-state" style="display:none">
+        <div class="empty-state-card">
+          <div class="empty-icon">🪴</div>
+          <h2>No gardens yet</h2>
+          <p>Create your first garden plot and start planning your growing season.</p>
+          <button class="btn-create" id="emptyCreateBtn">＋ Create My First Garden</button>
+        </div>
+      </div>
+      <div id="shared-section" style="display:none">
+        <div class="section-divider"><span>Shared with me</span></div>
+        <div id="shared-gardens-grid" class="gardens-grid"></div>
+      </div>
+    </div>
+
+    <!-- EXPLORE / PUBLIC -->
+    <div id="page-public" class="page">
+      <div class="page-header">
+        <div><h1>Explore</h1><p class="page-subtitle">See what others are growing</p></div>
+      </div>
+      <div id="public-gardens-grid" class="gardens-grid"></div>
+      <div id="public-empty-state" style="display:none">
+        <div class="empty-state-card">
+          <div class="empty-icon">🌻</div>
+          <h2>No public gardens yet</h2>
+          <p>Be the first to share your garden!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div id="page-calendar" class="page">
+      <div class="page-header">
+        <div><h1>📅 Calendar</h1><p class="page-subtitle">All tasks across all gardens</p></div>
+      </div>
+      <div id="consolidated-calendar"></div>
+    </div>
+
+    <!-- GARDEN VIEW -->
+    <div id="page-garden" class="page">
+      <div class="garden-page-header">
+        <button class="back-btn" id="backBtn">←</button>
+        <div class="garden-title-area">
+          <h1 id="gardenTitle">Garden</h1>
+          <span id="gardenOwnerBadge" class="owner-badge"></span>
+        </div>
+        <div class="season-selector" id="seasonSelector">
+          <button class="season-btn active" data-season="spring" title="Spring">🌸</button>
+          <button class="season-btn" data-season="summer" title="Summer">☀️</button>
+          <button class="season-btn" data-season="fall" title="Fall">🍂</button>
+          <button class="season-btn" data-season="winter" title="Winter">❄️</button>
+        </div>
+        <div class="garden-page-actions">
+          <button id="mergeModeBtn" class="header-action-btn">⊞</button>
+          <button id="gardenTasksBtn" class="header-action-btn">📋</button>
+          <button id="gardenJournalBtn" class="header-action-btn feature-standard">📓</button>
+          <button id="gardenTrackingBtn" class="header-action-btn feature-standard">📊</button>
+          <button id="gardenCropRotationBtn" class="header-action-btn feature-advanced" title="Crop Rotation" style="display:none">🔄</button>
+          <button id="gardenSuccessionBtn" class="header-action-btn feature-advanced" title="Succession Planting" style="display:none">🗓</button>
+          <button id="gardenSoilLogBtn" class="header-action-btn feature-advanced" title="Soil Amendments" style="display:none">🪱</button>
+          <button id="gardenPestLogBtn" class="header-action-btn feature-advanced" title="Pest & Disease Log" style="display:none">🐛</button>
+          <button id="gardenYieldBtn" class="header-action-btn feature-advanced" title="Yield Analytics" style="display:none">📈</button>
+          <button id="gardenSettingsBtn" class="header-action-btn" style="display:none">⚙</button>
+        </div>
+      </div>
+
+      <div id="garden-view-layout">
+        <div class="garden-col">
+          <div id="garden-container" aria-label="garden grid"></div>
+        </div>
+        <div class="panel-col">
+          <section id="info-panel">
+            <div id="defaultInfo">
+              <div class="panel-welcome">
+                <span class="panel-welcome-icon">🌱</span>
+                <h3>Select a plot</h3>
+                <p>Tap any tile to view or edit it</p>
+              </div>
+            </div>
+            <div id="editInfo" style="display:none">
+              <div class="panel-tabs">
+                <button class="panel-tab active" id="tabPlot">Plot</button>
+                <button class="panel-tab" id="tabTasks">📋 Tasks</button>
+                <button class="panel-tab feature-standard" id="tabHistory">📷 History</button>
+              </div>
+              <div id="panelPlot">
+                <div class="field">
+                  <label for="titleInput">Plant / Title</label>
+                  <div class="plant-search-wrap">
+                    <input id="titleInput" type="text" placeholder="e.g. Tomatoes" autocomplete="off"/>
+                    <div id="plantSuggestBox" class="plant-suggest-box" style="display:none"></div>
+                  </div>
+                </div>
+                <div id="plantInfoCard" class="plant-info-card" style="display:none"></div>
+                <div class="field">
+                  <label for="descInput">Notes</label>
+                  <textarea id="descInput" rows="3" placeholder="Notes about this plot"></textarea>
+                </div>
+                <div class="field">
+                  <label>Image</label>
+                  <div class="upload-row">
+                    <button class="upload-btn" id="tileUploadBtn">📷 Upload</button>
+                    <span id="tileUploadLabel" style="display:none;font-size:0.82rem;color:#4a7c3f;"></span>
+                  </div>
+                  <input id="imgInput" type="text" placeholder="or paste URL…" style="margin-top:0.4rem"/>
+                </div>
+                <div class="field">
+                  <label>Tile color</label>
+                  <div class="color-swatches" id="colorSwatches"></div>
+                  <input id="colorInput" type="color" value="#e8ffd6" style="display:none"/>
+                </div>
+                <div class="controls">
+                  <button class="btn btn-primary" id="saveBtn">Save</button>
+                  <button class="btn" id="clearBtn">Clear</button>
+                  <button class="btn" id="exitBtn">Exit</button>
+                  <button id="splitBtn" class="btn btn-warning" style="display:none">✂ Split</button>
+                </div>
+              </div>
+              <div id="panelTasks" style="display:none">
+                <div class="tasks-header">
+                  <span id="tasksTileLabel" class="tasks-tile-label"></span>
+                  <button class="btn-add-task" id="addTaskBtn">＋ Task</button>
+                </div>
+                <div id="tileTasksList"></div>
+              </div>
+              <div id="panelHistory" style="display:none">
+                <div class="tasks-header">
+                  <span class="tasks-tile-label" id="historyTileLabel"></span>
+                  <button class="btn-add-task" id="addPhotoBtn">＋ Photo</button>
+                </div>
+                <div id="tilePhotoTimeline"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div id="merge-toolbar">
+        <span id="mergeCount">Tap tiles to select</span>
+        <button id="mergeConfirmBtn" disabled>Merge</button>
+        <button id="mergeCancelBtn">Cancel</button>
+      </div>
+    </div>
+
+  </div><!-- end #pages-wrapper -->
+
+  <!-- Mobile bottom nav -->
+  <nav id="mobile-nav">
+    <button class="mob-nav-btn active" data-page="home">
+      <span class="mob-nav-icon">🌱</span>
+      <span>Gardens</span>
+    </button>
+    <button class="mob-nav-btn" data-page="public">
+      <span class="mob-nav-icon">🌍</span>
+      <span>Explore</span>
+    </button>
+    <button class="mob-nav-btn" data-page="calendar">
+      <span class="mob-nav-icon">📅</span>
+      <span>Calendar</span>
+    </button>
+    <button class="mob-nav-btn" id="mobMessagesBtn">
+      <span class="mob-nav-icon">💬<span class="mob-badge" id="mobMsgBadge" style="display:none"></span></span>
+      <span>Messages</span>
+    </button>
+    <button class="mob-nav-btn" id="profileNavBtn">
+      <span class="mob-nav-icon">👤<span class="mob-badge" id="mobNotifBadge" style="display:none"></span></span>
+      <span>Profile</span>
+    </button>
+  </nav>
+
+</div><!-- end #app -->
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Profile / settings sheet -->
+<div id="profile-sheet-overlay">
+  <div id="profile-sheet">
+    <div class="sheet-handle"></div>
+    <div class="profile-sheet-header">
+      <div class="profile-sheet-avatar">
+        <img id="sheetProfileImg" src="" alt=""/>
+        <div id="sheetProfileInitial"></div>
+      </div>
+      <div>
+        <div class="profile-sheet-name" id="sheetProfileName"></div>
+        <div class="profile-sheet-email" id="sheetProfileEmail"></div>
+      </div>
+    </div>
+
+    <!-- App mode -->
+    <div class="sheet-section">
+      <div class="sheet-section-title">Garden Mode</div>
+      <div class="mode-toggle-row">
+        <button class="mode-toggle-btn" data-mode="simple">🌱 Simple</button>
+        <button class="mode-toggle-btn active" data-mode="standard">🌿 Standard</button>
+        <button class="mode-toggle-btn" data-mode="advanced">🌳 Advanced</button>
+      </div>
+    </div>
+
+    <!-- Feature toggles -->
+    <div class="sheet-section" id="featureTogglesSection">
+      <div class="sheet-section-title">What I use</div>
+      <div id="featureTogglesList"></div>
+    </div>
+
+    <!-- Seed inventory quick access -->
+    <div class="sheet-section" id="seedInventorySheetSection" style="display:none">
+      <div class="sheet-section-title">Tools</div>
+      <button class="sheet-tool-btn" id="openSeedInventoryBtn">🫘 My Seed Inventory</button>
+    </div>
+
+    <!-- Location -->
+    <div class="sheet-section">
+      <div class="sheet-section-title">Location</div>
+      <div id="locationDisplay" class="location-display">Not set</div>
+      <button class="btn-outline-sm" id="changeLocationBtn">Change location</button>
+    </div>
+
+    <div class="sheet-divider"></div>
+    <button class="sheet-signout-btn" id="signOutBtn">Sign Out</button>
+  </div>
+</div>
+
+<!-- Create Garden modal -->
+<div id="create-modal-overlay">
+  <div id="create-modal">
+    <button class="modal-close-btn" id="createModalCloseBtn">✕</button>
+    <div class="create-modal-icon">🌱</div>
+    <h2>New Garden</h2>
+    <p class="create-modal-sub">Set up your growing space</p>
+    <div class="field"><label for="gardenNameInput">Garden Name</label><input id="gardenNameInput" type="text" placeholder="e.g. Backyard Raised Beds" maxlength="50"/></div>
+    <div class="field">
+      <label>Grid Size</label><p class="field-hint">rows × columns</p>
+      <div class="grid-size-inputs">
+        <div class="size-input-group"><label for="gridRows">Rows</label><div class="size-stepper"><button class="stepper-btn" data-target="gridRows" data-dir="-1">−</button><input id="gridRows" type="number" min="2" max="20" value="6"/><button class="stepper-btn" data-target="gridRows" data-dir="1">＋</button></div></div>
+        <div class="size-x">×</div>
+        <div class="size-input-group"><label for="gridCols">Cols</label><div class="size-stepper"><button class="stepper-btn" data-target="gridCols" data-dir="-1">−</button><input id="gridCols" type="number" min="2" max="20" value="6"/><button class="stepper-btn" data-target="gridCols" data-dir="1">＋</button></div></div>
+      </div>
+      <div class="grid-preview-wrap"><div id="gridPreview" class="grid-preview"></div><span id="gridPreviewLabel" class="grid-preview-label">36 plots</span></div>
+    </div>
+    <div class="field"><label>Visibility</label><div class="visibility-toggle"><button class="vis-btn active" id="visPrivate">🔒 Private</button><button class="vis-btn" id="visPublic">🌍 Public</button></div></div>
+    <button class="btn-create full-width" id="confirmCreateGardenBtn">Create Garden 🌿</button>
+  </div>
+</div>
+
+<!-- Garden Settings modal -->
+<div id="settings-modal-overlay">
+  <div id="settings-modal">
+    <button class="modal-close-btn" id="settingsModalCloseBtn">✕</button>
+    <h2>⚙ Settings</h2>
+    <p class="create-modal-sub" id="settingsGardenName"></p>
+    <div class="field"><label>Visibility</label><div class="visibility-toggle"><button class="vis-btn" id="settingsVisPrivate">🔒 Private</button><button class="vis-btn" id="settingsVisPublic">🌍 Public</button></div></div>
+    <div class="field" id="publicPermRow" style="display:none">
+      <label>Public visitors can</label>
+      <div class="perm-btns">
+        <button class="perm-btn active" data-val="viewonly">👁 View only</button>
+        <button class="perm-btn" data-val="taskonly">📋 Add tasks</button>
+        <button class="perm-btn" data-val="openEdit">✏ Edit tiles</button>
+      </div>
+    </div>
+    <div class="field"><label>Task priority on tiles</label><div class="task-display-options"><button class="task-display-btn active" data-val="color">🎨 Color</button><button class="task-display-btn" data-val="badge">❗ Badge</button><button class="task-display-btn" data-val="off">Off</button></div></div>
+    <div class="field"><label class="toggle-label"><span>🌿 Companion planting</span><input type="checkbox" id="companionToggle" checked/></label></div>
+    <div class="field"><label class="toggle-label"><span>🌤 Weather widget</span><input type="checkbox" id="weatherToggle" checked/></label></div>
+    <div class="field">
+      <label>Collaborators</label><p class="field-hint">Can view and edit even if private.</p>
+      <div class="collab-input-row"><input id="collabEmailInput" type="email" placeholder="friend@example.com"/><button class="btn-add-collab" id="addCollabBtn">Add</button></div>
+      <div id="collabList" class="collab-list"></div>
+      <button class="sheet-tool-btn" id="messageCollabsBtn" style="margin-top:0.6rem;display:none">💬 Message collaborators</button>
+    </div>
+    <div class="settings-divider"></div>
+    <div class="field">
+      <label>Export</label>
+      <button class="sheet-tool-btn" id="exportGardenPdfBtn">📄 Export garden as PDF</button>
+    </div>
+    <div class="settings-divider"></div>
+    <div class="danger-zone"><p class="danger-label">⚠ Danger Zone</p><button class="btn-danger" id="deleteGardenBtn">🗑 Delete this garden</button></div>
+  </div>
+</div>
+
+<!-- Task modal -->
+<div id="task-modal-overlay">
+  <div id="task-modal">
+    <button class="modal-close-btn" id="taskModalCloseBtn">✕</button>
+    <h2 id="taskModalTitle">New Task</h2>
+    <div class="field"><label>Title</label><input id="taskTitleInput" type="text" placeholder="e.g. Plant tomatoes" maxlength="80"/></div>
+    <div class="field"><label>Description</label><textarea id="taskDescInput" rows="2" placeholder="Details…"></textarea></div>
+    <div class="field"><label>Priority</label><div class="priority-picker" id="priorityPicker"><button class="priority-btn active" data-val="none">None</button><button class="priority-btn" data-val="low">🔵 Low</button><button class="priority-btn" data-val="medium">🟡 Med</button><button class="priority-btn" data-val="high">🟠 High</button><button class="priority-btn" data-val="urgent">🔴 Urgent</button></div></div>
+    <div class="field"><label>Status</label><div class="status-picker" id="statusPicker"><button class="status-btn active" data-val="todo">To Do</button><button class="status-btn" data-val="inprogress">In Progress</button><button class="status-btn" data-val="done">✓ Done</button></div></div>
+    <div class="field"><label>Due date</label><input id="taskDueInput" type="date"/></div>
+    <div class="field"><label>Recurring</label><div class="recurring-row"><select id="recurringSelect"><option value="none">Not recurring</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="custom">Every X days</option></select><input id="recurringDays" type="number" min="1" max="365" placeholder="days" style="display:none;width:80px"/></div></div>
+    <div class="field" id="taskAssignField"><label>Assign to</label><select id="taskAssignSelect"><option value="">Unassigned</option></select></div>
+    <div class="field"><label>Linked plots</label><div id="taskTilePicker" class="task-tile-picker"></div></div>
+    <div class="task-modal-actions">
+      <button class="btn-save-task" id="saveTaskBtn">Save Task</button>
+      <button class="btn-delete-task" id="deleteTaskBtn" style="display:none">🗑 Delete</button>
+    </div>
+    <div id="taskCommentsSection" style="display:none">
+      <div class="settings-divider"></div>
+      <h3 style="margin:0 0 0.7rem;font-size:1rem">Comments</h3>
+      <div id="taskCommentsList"></div>
+      <div class="task-comment-input-row">
+        <input id="taskCommentInput" type="text" placeholder="Add a comment…"/>
+        <button id="taskCommentSubmit">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Full Tasks view -->
+<div id="tasks-view-overlay">
+  <div id="tasks-view">
+    <div class="tasks-view-header">
+      <button class="back-btn" id="tasksViewBackBtn">←</button>
+      <h2 id="tasksViewTitle">Tasks</h2>
+      <button class="btn-add-task" id="tasksViewAddBtn">＋ Add</button>
+    </div>
+    <div class="tasks-filter-bar">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="todo">To Do</button>
+      <button class="filter-btn" data-filter="inprogress">Doing</button>
+      <button class="filter-btn" data-filter="done">Done</button>
+      <div class="filter-sep"></div>
+      <button class="filter-btn" data-filter="urgent">🔴</button>
+      <button class="filter-btn" data-filter="high">🟠</button>
+      <button class="filter-btn" data-filter="medium">🟡</button>
+      <button class="filter-btn" data-filter="low">🔵</button>
+    </div>
+    <div id="tasks-list"></div>
+    <div id="tasks-empty" style="display:none"><div class="empty-icon">📋</div><p>No tasks yet</p></div>
+  </div>
+</div>
+
+<!-- Journal modal -->
+<div id="journal-modal-overlay">
+  <div id="journal-modal">
+    <button class="modal-close-btn" id="journalModalCloseBtn">✕</button>
+    <h2>📓 Journal</h2>
+    <p class="create-modal-sub" id="journalGardenName"></p>
+    <div id="journal-entries"></div>
+    <div class="journal-new">
+      <textarea id="journalNewEntry" rows="4" placeholder="Write today's observation…"></textarea>
+      <button class="btn-save-task" id="saveJournalBtn">Add Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tracking modal -->
+<div id="tracking-modal-overlay">
+  <div id="tracking-modal">
+    <button class="modal-close-btn" id="trackingModalCloseBtn">✕</button>
+    <h2>📊 Tracking</h2>
+    <p class="create-modal-sub" id="trackingGardenName"></p>
+    <div class="tracking-tabs">
+      <button class="panel-tab active" data-track="harvest">🌾 Harvest</button>
+      <button class="panel-tab" data-track="spending">💰 Spending</button>
+      <button class="panel-tab" data-track="charts">📈 Charts</button>
+    </div>
+    <div id="trackHarvest" class="track-panel">
+      <div class="track-add-row">
+        <input id="harvestPlotInput" type="text" placeholder="Plot name"/>
+        <input id="harvestItemInput" type="text" placeholder="Item"/>
+        <input id="harvestAmountInput" type="number" placeholder="Amount" min="0" step="0.1"/>
+        <input id="harvestUnitInput" type="text" placeholder="Unit"/>
+        <input id="harvestDateInput" type="date"/>
+        <button id="addHarvestBtn" class="btn-add-collab">Add</button>
+      </div>
+      <div id="harvestList"></div>
+    </div>
+    <div id="trackSpending" class="track-panel" style="display:none">
+      <div class="track-add-row">
+        <input id="expensePlotInput" type="text" placeholder="Plot (optional)"/>
+        <input id="expenseItemInput" type="text" placeholder="Item"/>
+        <input id="expenseCostInput" type="number" placeholder="Cost ($)" min="0" step="0.01"/>
+        <input id="expenseDateInput" type="date"/>
+        <button id="addExpenseBtn" class="btn-add-collab">Add</button>
+      </div>
+      <div id="expenseList"></div>
+      <div class="expense-total" id="expenseTotal"></div>
+    </div>
+    <div id="trackCharts" class="track-panel" style="display:none">
+      <div class="chart-controls">
+        <select id="chartRangeSelect"><option value="week">This week</option><option value="month" selected>This month</option><option value="year">This year</option><option value="all">All time</option></select>
+        <select id="chartTypeSelect"><option value="harvest">Harvest yield</option><option value="spending">Spending</option></select>
+      </div>
+      <canvas id="trackingChart" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Photo modal -->
+<div id="photo-modal-overlay">
+  <div id="photo-modal">
+    <button class="modal-close-btn" id="photoModalCloseBtn">✕</button>
+    <h2>Add Photo</h2>
+    <div class="field"><label>Image</label><div class="upload-row"><button class="upload-btn" id="photoUploadBtn">📷 Upload</button></div><input id="photoUrlInput" type="text" placeholder="or paste URL…" style="margin-top:0.4rem"/></div>
+    <div class="field"><label>Date</label><input id="photoDateInput" type="date"/></div>
+    <div class="field"><label>Caption</label><input id="photoCaptionInput" type="text" placeholder="Optional note"/></div>
+    <button class="btn-save-task" id="savePhotoBtn">Save Photo</button>
+  </div>
+</div>
+
+<!-- Mobile tile modal -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <div class="modal-handle"></div>
+    <h2 id="modal-plotTitle">Plot</h2>
+    <div class="mobile-panel-tabs">
+      <button class="panel-tab active" id="mTabPlot">Plot</button>
+      <button class="panel-tab" id="mTabTasks">📋 Tasks</button>
+      <button class="panel-tab feature-standard" id="mTabHistory">📷 History</button>
+    </div>
+    <div id="mPanelPlot">
+      <div class="field"><label>Plant / Title</label><input id="modal-titleInput" type="text" placeholder="e.g. Tomato Bed"/></div>
+      <div id="modal-plantInfoCard" class="plant-info-card" style="display:none"></div>
+      <div class="field"><label>Notes</label><textarea id="modal-descInput" rows="3" placeholder="Notes about this plot"></textarea></div>
+      <div class="field"><label>Image URL</label><input id="modal-imgInput" type="text" placeholder="https://…"/></div>
+      <div class="field"><label>Tile color</label><div class="color-swatches" id="modal-colorSwatches"></div><input id="modal-colorInput" type="color" value="#e8ffd6" style="display:none"/></div>
+      <div class="controls">
+        <button class="btn btn-primary" id="modal-saveBtn">Save</button>
+        <button class="btn" id="modal-clearBtn">Clear</button>
+        <button class="btn" id="modal-exitBtn">Exit</button>
+        <button id="modal-splitBtn" style="display:none" class="btn btn-warning">✂ Split</button>
+      </div>
+    </div>
+    <div id="mPanelTasks" style="display:none">
+      <div class="tasks-header" style="margin-top:0.5rem">
+        <span id="mTasksTileLabel" class="tasks-tile-label"></span>
+        <button class="btn-add-task" id="mAddTaskBtn">＋ Task</button>
+      </div>
+      <div id="mTileTasksList"></div>
+    </div>
+    <div id="mPanelHistory" style="display:none">
+      <div class="tasks-header" style="margin-top:0.5rem">
+        <span class="tasks-tile-label">Photo Timeline</span>
+        <button class="btn-add-task" id="mAddPhotoBtn">＋ Photo</button>
+      </div>
+      <div id="mTilePhotoTimeline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyDFVgPG-oauNpgmkXWK0Wvj6z4PmyqWNY0",
+    authDomain: "aiyp-interactive-garden.firebaseapp.com",
+    projectId: "aiyp-interactive-garden",
+    storageBucket: "aiyp-interactive-garden.firebasestorage.app",
+    messagingSenderId: "388306498",
+    appId: "1:388306498:web:0d3beafd58dcff93c9bfdb"
+  });
+
+  // Enable offline persistence — app works without network
+  firebase.firestore().enablePersistence({ synchronizeTabs: true })
+    .catch(err => {
+      if (err.code === 'failed-precondition') {
+        console.warn('Offline persistence: multiple tabs open');
+      } else if (err.code === 'unimplemented') {
+        console.warn('Offline persistence not supported in this browser');
+      }
+    });
+</script>
+<script src="js/utils.js"></script>
+<script src="js/mode.js"></script>
+<script src="js/app.js"></script>
+<script src="js/onboarding.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/gardens.js"></script>
+<script src="js/plant-library.js"></script>
+<script src="js/plants.js"></script>
+<script src="js/tiles.js"></script>
+<script src="js/tasks.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/tracking.js"></script>
+<!-- CROP ROTATION MODAL -->
+<div id="crop-rotation-overlay">
+  <div id="crop-rotation-modal">
+    <div class="adv-modal-handle"></div>
+    <div class="adv-modal-header">
+      <h2>🔄 Crop Rotation</h2>
+      <p class="adv-modal-sub" id="cropRotationGardenName"></p>
+      <button class="modal-close-btn" id="cropRotationCloseBtn">✕</button>
+    </div>
+    <div class="adv-modal-info">
+      <p>Track what's planted in each bed each year. The app warns you when you're about to plant the same plant family in the same spot too soon.</p>
+    </div>
+    <div class="cr-year-nav">
+      <button class="cal-nav-btn" id="crPrevYear">‹</button>
+      <span id="crYearLabel" class="cr-year-label"></span>
+      <button class="cal-nav-btn" id="crNextYear">›</button>
+    </div>
+    <div id="cr-grid" class="cr-grid"></div>
+    <div class="cr-legend">
+      <h4>Plant family rotation guide</h4>
+      <div class="cr-legend-grid" id="crLegendGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESSION PLANTING MODAL -->
+<div id="succession-overlay">
+  <div id="succession-modal">
+    <div class="adv-modal-handle"></div>
+    <div class="adv-modal-header">
+      <h2>🗓 Succession Planting</h2>
+      <p class="adv-modal-sub" id="successionGardenName"></p>
+      <button class="modal-close-btn" id="successionCloseBtn">✕</button>
+    </div>
+    <div class="adv-modal-info">
+      <p>Stagger plantings every 2–3 weeks for a continuous harvest instead of everything ripening at once.</p>
+    </div>
+    <div class="suc-add-row">
+      <select id="sucPlantSelect" class="suc-select">
+        <option value="">Choose a plant…</option>
+      </select>
+      <input id="sucStartDate" type="date" class="suc-date"/>
+      <input id="sucIntervalDays" type="number" min="7" max="42" value="14" placeholder="Interval (days)"/>
+      <input id="sucNumSowings" type="number" min="2" max="12" value="4" placeholder="# sowings"/>
+      <button class="btn-add-collab" id="addSuccessionBtn">Plan</button>
+    </div>
+    <div id="suc-timeline" class="suc-timeline"></div>
+    <div id="suc-empty" class="adv-empty" style="display:none">
+      <div class="empty-icon">🗓</div>
+      <p>No succession plans yet. Add one above.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SOIL LOG MODAL -->
+<div id="soil-log-overlay">
+  <div id="soil-log-modal">
+    <div class="adv-modal-handle"></div>
+    <div class="adv-modal-header">
+      <h2>🪱 Soil Amendments</h2>
+      <p class="adv-modal-sub" id="soilLogGardenName"></p>
+      <button class="modal-close-btn" id="soilLogCloseBtn">✕</button>
+    </div>
+    <div class="soil-add-form">
+      <div class="soil-add-row">
+        <select id="soilAmendmentType" class="suc-select">
+          <option value="compost">🍂 Compost</option>
+          <option value="fertilizer">🌱 Fertilizer</option>
+          <option value="lime">🪨 Lime</option>
+          <option value="manure">💩 Manure</option>
+          <option value="mulch">🍃 Mulch</option>
+          <option value="sulfur">🟡 Sulfur</option>
+          <option value="bonemeal">🦴 Bone meal</option>
+          <option value="bloodmeal">🔴 Blood meal</option>
+          <option value="other">📦 Other</option>
+        </select>
+        <input id="soilAmendmentName" type="text" placeholder="Brand / detail (optional)"/>
+        <input id="soilAmendmentPlot" type="text" placeholder="Plot / bed (optional)"/>
+      </div>
+      <div class="soil-add-row">
+        <input id="soilAmendmentAmount" type="text" placeholder="Amount (e.g. 2 bags, 1 cup)"/>
+        <input id="soilAmendmentDate" type="date"/>
+        <input id="soilAmendmentNotes" type="text" placeholder="Notes (e.g. pH 6.5 target)"/>
+        <button class="btn-add-collab" id="addSoilLogBtn">Log</button>
+      </div>
+    </div>
+    <div class="soil-filter-row">
+      <select id="soilFilterPlot">
+        <option value="">All beds</option>
+      </select>
+      <select id="soilFilterType">
+        <option value="">All types</option>
+        <option value="compost">Compost</option>
+        <option value="fertilizer">Fertilizer</option>
+        <option value="lime">Lime</option>
+        <option value="manure">Manure</option>
+        <option value="mulch">Mulch</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div id="soil-log-list"></div>
+    <div id="soil-empty" class="adv-empty" style="display:none">
+      <div class="empty-icon">🪱</div>
+      <p>No amendments logged yet.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SEED INVENTORY MODAL -->
+<div id="seed-inventory-overlay">
+  <div id="seed-inventory-modal">
+    <div class="adv-modal-handle"></div>
+    <div class="adv-modal-header">
+      <h2>🫘 Seed Inventory</h2>
+      <button class="modal-close-btn" id="seedInventoryCloseBtn">✕</button>
+    </div>
+    <div class="seed-toolbar">
+      <input id="seedSearch" type="text" placeholder="Search seeds…" autocomplete="off"/>
+      <button class="btn-add-collab" id="addSeedBtn">＋ Add Seed</button>
+    </div>
+    <div class="seed-filters">
+      <button class="filter-btn active" data-seed-filter="all">All</button>
+      <button class="filter-btn" data-seed-filter="low">⚠ Low stock</button>
+      <button class="filter-btn" data-seed-filter="expiring">📅 Expiring soon</button>
+    </div>
+    <div id="seed-list" class="seed-list"></div>
+    <div id="seed-empty" class="adv-empty" style="display:none">
+      <div class="empty-icon">🫘</div>
+      <p>No seeds in your inventory yet.</p>
+    </div>
+    <!-- Add/edit seed form (inline) -->
+    <div id="seed-form" class="seed-form" style="display:none">
+      <div class="seed-form-header">
+        <h3 id="seedFormTitle">New Seed</h3>
+        <button class="modal-close-btn" id="seedFormCloseBtn">✕</button>
+      </div>
+      <div class="field"><label>Plant name</label><input id="seedPlantInput" type="text" placeholder="e.g. Tomato — Beefsteak"/></div>
+      <div class="seed-form-row">
+        <div class="field"><label>Quantity</label><input id="seedQtyInput" type="number" min="0" step="1" placeholder="e.g. 40"/></div>
+        <div class="field"><label>Unit</label><select id="seedUnitInput"><option value="seeds">seeds</option><option value="packets">packets</option><option value="grams">grams</option><option value="oz">oz</option></select></div>
+      </div>
+      <div class="seed-form-row">
+        <div class="field"><label>Expiry / packed year</label><input id="seedExpiryInput" type="number" min="2020" max="2035" placeholder="e.g. 2026"/></div>
+        <div class="field"><label>Low stock alert below</label><input id="seedLowStockInput" type="number" min="0" placeholder="e.g. 10"/></div>
+      </div>
+      <div class="field"><label>Source / supplier</label><input id="seedSourceInput" type="text" placeholder="e.g. Baker Creek, saved"/></div>
+      <div class="field"><label>Notes</label><input id="seedNotesInput" type="text" placeholder="Germination rate, special storage…"/></div>
+      <div class="field"><label>Earmarked for garden</label><select id="seedGardenInput"><option value="">None</option></select></div>
+      <div class="seed-form-actions">
+        <button class="btn-save-task" id="saveSeedBtn">Save Seed</button>
+        <button class="btn-delete-task" id="deleteSeedBtn" style="display:none">🗑 Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PEST & DISEASE LOG MODAL -->
+<div id="pest-log-overlay">
+  <div id="pest-log-modal">
+    <div class="adv-modal-handle"></div>
+    <div class="adv-modal-header">
+      <h2>🐛 Pest & Disease Log</h2>
+      <p class="adv-modal-sub" id="pestLogGardenName"></p>
+      <button class="modal-close-btn" id="pestLogCloseBtn">✕</button>
+    </div>
+    <div class="pest-add-form">
+      <div class="soil-add-row">
+        <select id="pestType" class="suc-select">
+          <option value="pest">🐛 Pest</option>
+          <option value="disease">🍄 Disease</option>
+          <option value="deficiency">🟡 Deficiency</option>
+          <option value="other">❓ Other</option>
+        </select>
+        <input id="pestName" type="text" placeholder="e.g. Aphids, Blight, Iron deficiency"/>
+        <input id="pestPlot" type="text" placeholder="Plot / tile"/>
+        <input id="pestDate" type="date"/>
+      </div>
+      <div class="soil-add-row">
+        <select id="pestSeverity" class="suc-select">
+          <option value="minor">🟢 Minor</option>
+          <option value="moderate">🟡 Moderate</option>
+          <option value="severe">🔴 Severe</option>
+        </select>
+        <input id="pestTreatment" type="text" placeholder="Treatment applied (optional)"/>
+        <input id="pestOutcome" type="text" placeholder="Outcome (optional)"/>
+        <button class="btn-add-collab" id="addPestLogBtn">Log</button>
+      </div>
+    </div>
+    <div class="pest-filter-row">
+      <select id="pestFilterType"><option value="">All types</option><option value="pest">Pest</option><option value="disease">Disease</option><option value="deficiency">Deficiency</option></select>
+      <select id="pestFilterSeverity"><option value="">All severity</option><option value="minor">Minor</option><option value="moderate">Moderate</option><option value="severe">Severe</option></select>
+    </div>
+    <div id="pest-log-list"></div>
+    <div id="pest-empty" class="adv-empty" style="display:none">
+      <div class="empty-icon">🐛</div>
+      <p>No pest or disease records yet.</p>
+    </div>
+  </div>
+</div>
+
+<!-- YIELD ANALYTICS MODAL -->
+<div id="yield-analytics-overlay">
+  <div id="yield-analytics-modal">
+    <div class="adv-modal-handle"></div>
+    <div class="adv-modal-header">
+      <h2>📈 Yield Analytics</h2>
+      <p class="adv-modal-sub" id="yieldGardenName"></p>
+      <button class="modal-close-btn" id="yieldAnalyticsCloseBtn">✕</button>
+    </div>
+    <div class="yield-controls">
+      <select id="yieldYearSelect"></select>
+      <select id="yieldViewSelect">
+        <option value="bysqft">Yield / sq ft</option>
+        <option value="byplant">By plant</option>
+        <option value="roi">ROI (yield vs spend)</option>
+        <option value="monthly">Monthly timeline</option>
+      </select>
+    </div>
+    <div id="yield-summary" class="yield-summary"></div>
+    <canvas id="yieldChart" style="max-height:260px"></canvas>
+    <div id="yield-table" class="yield-table"></div>
+    <div id="yield-empty" class="adv-empty" style="display:none">
+      <div class="empty-icon">📈</div>
+      <p>Log some harvests to see analytics here.</p>
+    </div>
+  </div>
+</div>
+
+<!-- MESSAGES OVERLAY -->
+<div id="messages-overlay">
+  <div id="messages-modal">
+    <div class="adv-modal-handle"></div>
+    <div class="msg-header">
+      <div class="msg-header-left">
+        <button class="back-btn" id="msgBackToListBtn" style="display:none">←</button>
+        <h2 id="msgHeaderTitle">Messages</h2>
+      </div>
+      <button class="modal-close-btn" id="messagesCloseBtn">✕</button>
+    </div>
+
+    <!-- Conversation list -->
+    <div id="msg-conv-list-view">
+      <div id="msg-conv-list" class="msg-conv-list"></div>
+      <div id="msg-conv-empty" class="adv-empty" style="display:none">
+        <div class="empty-icon">💬</div>
+        <p>No conversations yet.<br>Open a garden you share with others to message.</p>
+      </div>
+    </div>
+
+    <!-- Single conversation view -->
+    <div id="msg-chat-view" style="display:none">
+      <div id="msg-messages-list" class="msg-messages-list"></div>
+      <div class="msg-input-bar">
+        <input id="msgInput" type="text" placeholder="Message…" maxlength="1000" autocomplete="off"/>
+        <button id="msgSendBtn" class="msg-send-btn">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATIONS OVERLAY -->
+<div id="notif-overlay">
+  <div id="notif-modal">
+    <div class="adv-modal-handle"></div>
+    <div class="adv-modal-header">
+      <h2>🔔 Notifications</h2>
+      <button class="modal-close-btn" id="notifCloseBtn">✕</button>
+    </div>
+    <div class="notif-toolbar">
+      <button class="btn-outline-sm" id="markAllReadBtn">✓ Mark all read</button>
+    </div>
+    <div id="notif-list" class="notif-list"></div>
+    <div id="notif-empty" class="adv-empty" style="display:none">
+      <div class="empty-icon">🔔</div>
+      <p>No notifications yet.</p>
+    </div>
+  </div>
+</div>
+
+<script src="js/weather.js"></script>
+<script src="js/advanced.js"></script>
+<script src="js/batch4.js"></script>
+<script src="js/messaging.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="js/batch6.js"></script>
+</body>
+</html>
