@@ -291,15 +291,6 @@ document.getElementById('confirmCreateGardenBtn').onclick = async () => {
     createOverlay.classList.remove('open');
     showToast('Garden created! 🌱');
     openGardenPage(docRef.id, { ...gardenDoc }, true);
-      ownerId: currentUser.uid,
-      visibility: selectedVisibility,
-      publicPermission: 'viewonly',
-      collaboratorEmails: [],
-      taskDisplayMode: 'color',
-      companionPlanting: true,
-      showWeather: true,
-      currentSeason: 'spring'
-    }, true);
   } finally {
     btn.disabled = false;
   }

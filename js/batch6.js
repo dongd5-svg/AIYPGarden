@@ -492,19 +492,15 @@ async function addOverdueBadgeToCard(gardenId, cardEl) {
   const originalNavigateTo = window.navigateTo;
   if (!originalNavigateTo) return;
   window.navigateTo = function(page) {
-    const currentEl = document.querySelector('.page.active');
-    if (currentEl) currentEl.style.opacity = '0';
-    setTimeout(() => {
-      originalNavigateTo(page);
-      const newEl = document.querySelector('.page.active');
-      if (newEl) {
-        newEl.style.opacity = '0';
-        requestAnimationFrame(() => {
-          newEl.style.transition = 'opacity 0.15s ease';
-          newEl.style.opacity = '1';
-        });
-      }
-    }, 80);
+    // Call navigate immediately — don't delay with setTimeout
+    // Opacity transitions were causing pages to get stuck at opacity:0
+    originalNavigateTo(page);
+    const newEl = document.querySelector('.page.active');
+    if (newEl) {
+      // Reset any stuck opacity first
+      newEl.style.transition = 'none';
+      newEl.style.opacity = '1';
+    }
   };
 })();
 
