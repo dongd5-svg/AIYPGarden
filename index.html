@@ -426,14 +426,18 @@
                 <div id="ShapeDiagram" class="shape-diagram"></div>
 
                 <div class="sg-section-title" style="margin-top:0.8rem">Planting Map</div>
-                <p class="subgrid-hint">Tap any cell to label it with a plant.</p>
-                <div class="subgrid-size-row">
-                  <div class="subgrid-size-btns">
-                    <button class="sg-size-btn active" data-rows="2" data-cols="2">2×2</button>
-                    <button class="sg-size-btn" data-rows="3" data-cols="3">3×3</button>
-                    <button class="sg-size-btn" data-rows="4" data-cols="4">4×4</button>
-                    <button class="sg-size-btn" data-rows="3" data-cols="4">3×4</button>
-                    <button class="sg-size-btn" data-rows="2" data-cols="3">2×3</button>
+                <p class="subgrid-hint">Tap any cell to label it. Use + / − to resize the grid.</p>
+                <div class="sg-resize-controls">
+                  <div class="sg-resize-group">
+                    <span class="sg-resize-label">Rows</span>
+                    <button type="button" class="sg-resize-btn" id="SgRemRow">−</button>
+                    <span class="sg-grid-count" id="SgGridCount">3 × 3</span>
+                    <button type="button" class="sg-resize-btn" id="SgAddRow">+</button>
+                  </div>
+                  <div class="sg-resize-group">
+                    <span class="sg-resize-label">Cols</span>
+                    <button type="button" class="sg-resize-btn" id="SgRemCol">−</button>
+                    <button type="button" class="sg-resize-btn" id="SgAddCol">+</button>
                   </div>
                 </div>
                 <div id="subgridContainer" class="subgrid-container"></div>
@@ -822,14 +826,18 @@
       <div id="mShapeDiagram" class="shape-diagram"></div>
 
       <div class="sg-section-title" style="margin-top:0.8rem">Planting Map</div>
-      <p class="subgrid-hint" style="margin-top:0.3rem">Tap any cell to label it with a plant.</p>
-      <div class="subgrid-size-row">
-        <div class="subgrid-size-btns" id="mSubgridSizeBtns">
-          <button class="sg-size-btn active" data-rows="2" data-cols="2">2×2</button>
-          <button class="sg-size-btn" data-rows="3" data-cols="3">3×3</button>
-          <button class="sg-size-btn" data-rows="4" data-cols="4">4×4</button>
-          <button class="sg-size-btn" data-rows="3" data-cols="4">3×4</button>
-          <button class="sg-size-btn" data-rows="2" data-cols="3">2×3</button>
+      <p class="subgrid-hint" style="margin-top:0.3rem">Tap any cell to label it. Use + / − to resize.</p>
+      <div class="sg-resize-controls">
+        <div class="sg-resize-group">
+          <span class="sg-resize-label">Rows</span>
+          <button type="button" class="sg-resize-btn" id="mSgRemRow">−</button>
+          <span class="sg-grid-count" id="mSgGridCount">3 × 3</span>
+          <button type="button" class="sg-resize-btn" id="mSgAddRow">+</button>
+        </div>
+        <div class="sg-resize-group">
+          <span class="sg-resize-label">Cols</span>
+          <button type="button" class="sg-resize-btn" id="mSgRemCol">−</button>
+          <button type="button" class="sg-resize-btn" id="mSgAddCol">+</button>
         </div>
       </div>
       <div id="mSubgridContainer" class="subgrid-container"></div>
