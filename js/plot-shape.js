@@ -206,8 +206,10 @@ function wireGridControls(p) {
 }
 
 function updateGridCountDisplay(p) {
-  var el = document.getElementById(p + 'SgGridCount');
-  if (el) el.textContent = sgRows + ' \u00d7 ' + sgCols;
+  var rowEl    = document.getElementById(p + 'SgGridCount');
+  var colEl    = document.getElementById(p + 'SgGridCountCols');
+  if (rowEl) rowEl.textContent = sgRows;
+  if (colEl) colEl.textContent = sgCols;
   var remRow = document.getElementById(p + 'SgRemRow');
   var remCol = document.getElementById(p + 'SgRemCol');
   var addRow = document.getElementById(p + 'SgAddRow');

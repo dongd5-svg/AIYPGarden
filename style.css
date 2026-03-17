@@ -1825,33 +1825,37 @@ body:has(#offline-banner[style*="flex"]) #app {
 
 /* Grid resize controls */
 .sg-resize-controls {
-  display: flex; gap: 1rem; align-items: center;
-  margin-bottom: 0.7rem; flex-wrap: wrap;
+  display: flex; gap: 1.2rem; align-items: center;
+  margin-bottom: 0.8rem; flex-wrap: wrap;
 }
 .sg-resize-group {
-  display: flex; align-items: center; gap: 0.35rem;
+  display: flex; align-items: center; gap: 0.4rem;
 }
 .sg-resize-label {
-  font-size: 0.72rem; font-weight: 700; color: var(--text-3);
-  min-width: 28px;
+  font-size: 0.78rem; font-weight: 700; color: var(--text-3);
+  width: 32px;
 }
 .sg-resize-btn {
-  width: 28px; height: 28px; border-radius: 50%;
+  width: 30px; height: 30px; border-radius: 50%;
   border: 1.5px solid var(--border-2); background: var(--surface);
-  font-size: 1rem; font-weight: 700; cursor: pointer;
+  font-size: 1.1rem; font-weight: 700; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  color: var(--green-1); font-family: var(--font);
+  color: var(--green-1); font-family: var(--font); line-height: 1;
   transition: background 0.12s, border-color 0.12s;
+  flex-shrink: 0;
 }
 .sg-resize-btn:hover:not(:disabled) { background: var(--green-6); border-color: var(--green-3); }
 .sg-resize-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .sg-grid-count {
-  font-size: 0.82rem; font-weight: 800; color: var(--text-1);
-  min-width: 36px; text-align: center;
+  font-size: 0.95rem; font-weight: 800; color: var(--text-1);
+  min-width: 22px; text-align: center;
 }
+
+/* Sub-grid planting map container */
+.subgrid-container {
   display: grid; gap: 3px;
-  width: 100%; aspect-ratio: 1;
-  max-height: 200px; margin-bottom: 0.8rem;
+  width: 100%; min-height: 140px; max-height: 260px;
+  margin-bottom: 0.8rem;
   border: 1.5px solid var(--border-2); border-radius: var(--radius-sm);
   overflow: hidden; background: var(--border);
 }
