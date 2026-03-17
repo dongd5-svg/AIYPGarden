@@ -847,7 +847,7 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 2px solid #e67e00 !im
   background: var(--surface); width: 100%; max-width: 480px;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   padding: 0.5rem 1.5rem 2rem; max-height: 85vh; overflow-y: auto;
-  animation: slideUp 0.22s ease-out;
+  animation: slideUp 0.22s ease-out both;
 }
 .sheet-handle { width: 40px; height: 4px; background: var(--border-2); border-radius: 2px; margin: 0.8rem auto 1.2rem; }
 .profile-sheet-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
@@ -877,13 +877,14 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 2px solid #e67e00 !im
 /* Mobile tile modal */
 #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 1000; align-items: flex-end; justify-content: center; pointer-events: none; }
 #modal-overlay.open { display: flex; pointer-events: auto; }
-#modal-box { background: var(--surface); width: 100%; max-height: 72vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 0.5rem 1.2rem 2.5rem; overflow-y: auto; box-shadow: 0 -8px 40px rgba(0,0,0,0.2); animation: slideUp 0.2s ease-out; }
+#modal-box { background: var(--surface); width: 100%; max-height: 72vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 0.5rem 1.2rem 2.5rem; overflow-y: auto; box-shadow: 0 -8px 40px rgba(0,0,0,0.2); animation: slideUp 0.2s ease-out both; transform: translateY(100%); }
+#modal-overlay.open #modal-box { transform: translateY(0); }
 #modal-overlay.closing #modal-box { animation: slideDown 0.18s ease-in forwards; }
 .modal-handle { width: 40px; height: 4px; background: var(--border-2); border-radius: 2px; margin: 0.8rem auto 0.8rem; }
 #modal-box h2 { margin: 0 0 0.8rem; font-size: 1.2rem; font-weight: 800; }
 .controls { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
-@keyframes slideUp   { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes slideUp   { from { transform: translateY(100%); opacity: 0.8; } to { transform: translateY(0); opacity: 1; } }
 @keyframes slideDown { from { transform: translateY(0); } to { transform: translateY(100%); } }
 
 /* ═══ DESKTOP OVERRIDES ══════════════════════════════════════════*/
@@ -936,7 +937,7 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 2px solid #e67e00 !im
   #create-modal, #settings-modal, #task-modal, #journal-modal, #tracking-modal, #photo-modal {
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     max-width: 100%; max-height: 92vh; padding: 0.5rem 1.2rem 2.5rem;
-    animation: slideUp 0.22s ease-out;
+    animation: slideUp 0.22s ease-out both;
   }
   #create-modal-overlay, #settings-modal-overlay, #task-modal-overlay,
   #journal-modal-overlay, #tracking-modal-overlay, #photo-modal-overlay {
@@ -968,7 +969,7 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 2px solid #e67e00 !im
   background: var(--surface); width: 100%; max-width: 680px;
   max-height: 90vh; display: flex; flex-direction: column;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  overflow: hidden; animation: slideUp 0.22s ease-out;
+  overflow: hidden; animation: slideUp 0.22s ease-out both;
   box-shadow: var(--shadow-lg);
 }
 .pl-header {
@@ -1111,7 +1112,7 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 2px solid #e67e00 !im
   background: var(--surface); width: 100%; max-width: 680px;
   max-height: 88vh; display: flex; flex-direction: column;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  overflow: hidden; animation: slideUp 0.22s ease-out;
+  overflow: hidden; animation: slideUp 0.22s ease-out both;
   box-shadow: var(--shadow-lg);
 }
 .adv-modal-handle {
@@ -1276,7 +1277,7 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 2px solid #e67e00 !im
   background: var(--surface); width: 100%; max-width: 680px;
   max-height: 90vh; display: flex; flex-direction: column;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  overflow: hidden; animation: slideUp 0.22s ease-out;
+  overflow: hidden; animation: slideUp 0.22s ease-out both;
   box-shadow: var(--shadow-lg);
 }
 
@@ -1473,7 +1474,7 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 2px solid #e67e00 !im
   background: var(--surface); width: 100%; max-width: 520px;
   height: 80vh; display: flex; flex-direction: column;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  overflow: hidden; animation: slideUp 0.22s ease-out;
+  overflow: hidden; animation: slideUp 0.22s ease-out both;
   box-shadow: var(--shadow-lg);
 }
 .msg-header {
@@ -1610,7 +1611,7 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 2px solid #e67e00 !im
   background: var(--surface); width: 100%; max-width: 480px;
   max-height: 80vh; display: flex; flex-direction: column;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  overflow: hidden; animation: slideUp 0.22s ease-out;
+  overflow: hidden; animation: slideUp 0.22s ease-out both;
   box-shadow: var(--shadow-lg);
 }
 .notif-toolbar {
@@ -1701,7 +1702,7 @@ body:has(#offline-banner[style*="flex"]) #app {
   padding: 0.5rem 0; z-index: 3000;
   box-shadow: var(--shadow-lg); border: 1.5px solid var(--border);
   min-width: 220px; overflow: hidden;
-  animation: slideUp 0.18s ease-out;
+  animation: slideUp 0.18s ease-out both;
 }
 .tqm-title {
   padding: 0.7rem 1.2rem 0.5rem; font-size: 0.88rem;
