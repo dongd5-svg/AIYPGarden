@@ -180,10 +180,7 @@ function buildCalendarMonth(year, month, tasks, showGardenLabel) {
         : (t.title || 'Task');
       ev.textContent = label;
       ev.title = label;
-      ev.onclick = () => {
-        // If it's a task in the current garden, open the task modal
-        if (t.gardenId === currentGardenId) openTaskModal(t.id, null);
-      };
+      ev.onclick = e => { e.stopPropagation(); openCalEventDetail(t); };
       cell.appendChild(ev);
     });
     if (dayTasks.length > 3) {
@@ -224,4 +221,90 @@ function renderGardenCalendar(containerId) {
 function getMonthName(month) {
   return ['January','February','March','April','May','June',
           'July','August','September','October','November','December'][month];
+}
+
+// ── Calendar event detail popup ───────────────────────────────────
+function openCalEventDetail(task) {
+  // Remove any existing popup
+  document.querySelectorAll('.cal-detail-popup').forEach(p => p.remove());
+
+  const popup = document.createElement('div');
+  popup.className = 'cal-detail-popup';
+
+  const priorityColor = PRIORITY_COLORS[task.priority||'none'] || 'rgba(47,79,47,0.1)';
+  const statusLabel   = STATUS_LABELS[task.status||'todo'] || 'To Do';
+  const overdue = task.dueDate && new Date(task.dueDate+'T00:00:00') < new Date()
+    && task.status !== 'done';
+
+  popup.innerHTML = `
+    <div class="cal-detail-header" style="border-left:4px solid ${priorityColor}">
+      <div class="cal-detail-title">${escHtml(task.title||'Task')}</div>
+      <button class="cal-detail-close">✕</button>
+    </div>
+    ${task.gardenName ? `<div class="cal-detail-garden">🌱 ${escHtml(task.gardenName)}</div>` : ''}
+    ${task.description ? `<div class="cal-detail-desc">${escHtml(task.description)}</div>` : ''}
+    <div class="cal-detail-meta">
+      ${task.priority && task.priority !== 'none'
+        ? `<span class="task-priority-badge" style="background:${priorityColor}">${PRIORITY_LABELS[task.priority]}</span>` : ''}
+      <span class="task-status-badge">${statusLabel}</span>
+      ${task.dueDate ? `<span class="task-due-badge${overdue?' overdue':''}">📅 ${task.dueDate}</span>` : ''}
+    </div>
+    ${task.linkedTiles && task.linkedTiles.length ? `
+      <div class="cal-detail-actions">
+        <span style="font-size:0.82rem;color:#888">Linked plots:</span>
+        <div class="task-linked-tiles" id="cal-detail-tiles"></div>
+      </div>` : ''}
+    ${task.gardenId && task.gardenId === currentGardenId ? `
+      <button class="cal-detail-edit-btn" data-id="${escHtml(task.id)}">✏ Edit task</button>
+    ` : ''}
+  `;
+
+  document.body.appendChild(popup);
+
+  // Populate linked tile chips with click-to-navigate
+  if (task.linkedTiles && task.linkedTiles.length) {
+    const tilesDiv = document.getElementById('cal-detail-tiles');
+    if (tilesDiv) {
+      task.linkedTiles.forEach(tileId => {
+        const tileData = tilesData ? tilesData[tileId] : null;
+        const name = tileData?.title || tileId;
+        const chip = document.createElement('span');
+        chip.className = 'task-tile-chip';
+        chip.style.cursor = 'pointer';
+        chip.textContent = '📍 ' + name;
+        chip.title = 'Go to this plot';
+        chip.onclick = () => {
+          popup.remove();
+          // Navigate to the garden and open this tile
+          if (task.gardenId && task.gardenId !== currentGardenId) {
+            db.collection('gardens').doc(task.gardenId).get().then(doc => {
+              if (doc.exists) {
+                const isOwn = doc.data().ownerId === currentUser?.uid;
+                openGardenPage(doc.id, doc.data(), isOwn);
+                setTimeout(() => openPanel(tileId), 600);
+              }
+            });
+          } else if (currentGardenId) {
+            openPanel(tileId);
+          }
+        };
+        tilesDiv.appendChild(chip);
+      });
+    }
+  }
+
+  // Close button
+  popup.querySelector('.cal-detail-close').onclick = () => popup.remove();
+
+  // Edit button
+  const editBtn = popup.querySelector('.cal-detail-edit-btn');
+  if (editBtn) editBtn.onclick = () => {
+    popup.remove();
+    openTaskModal(editBtn.dataset.id, null);
+  };
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', () => popup.remove(), { once: true });
+  }, 50);
 }
