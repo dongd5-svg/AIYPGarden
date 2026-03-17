@@ -27,7 +27,8 @@ async function checkOnboarding(user) {
 function showOnboarding() {
   document.getElementById('onboarding').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
-  showObScreen('ob-login');
+  // Go to mode picker (step 1) — user is already authenticated at this point
+  showObScreen('ob-mode');
 }
 
 function showObScreen(id) {
@@ -39,18 +40,18 @@ function showObScreen(id) {
 function finishOnboarding() {
   document.getElementById('onboarding').style.display = 'none';
   document.getElementById('app').style.display = 'block';
+  // Save onboardingDone — fire and forget is fine here, app is already visible
   db.collection('users').doc(currentUser.uid).update({
     onboardingDone: true,
     appMode: selectedObMode,
   });
-  appMode = selectedObMode;
+  appMode     = selectedObMode;
   appFeatures = { ...MODES[appMode].features };
   applyMode();
-  navigateTo('home');
+  // App is already booted — just refresh gardens and greeting
+  setGreeting();
   loadMyGardens();
-  initWeather();
   if (typeof renderWhatToPlantNow === 'function') renderWhatToPlantNow();
-  if (typeof initMessaging === 'function') initMessaging();
 }
 
 // ── Login screen (handled by app.js googleBtn) ────────────────────

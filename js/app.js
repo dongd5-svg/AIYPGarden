@@ -26,28 +26,43 @@ document.getElementById('signOutBtn').onclick = () => {
 auth.onAuthStateChanged(async user => {
   currentUser = user;
   if (user) {
+    // Always hide the login screen immediately
     document.getElementById('onboarding').style.display = 'none';
+
+    // Ensure user doc exists (creates it for new users)
     await ensureUserDoc(user);
+
+    // Load mode preferences
     await loadUserMode(user.uid);
+
+    // Profile image
     if (user.photoURL) document.getElementById('profileImg').src = user.photoURL;
     else document.getElementById('profileImg').style.display = 'none';
 
+    // Load saved location and frost dates
     const userDoc  = await db.collection('users').doc(user.uid).get();
     const userData = userDoc.data() || {};
     if (userData.location)   userLocation = userData.location;
     if (userData.frostDates) { frostDates = userData.frostDates; showFrostBanner(); }
 
-    await checkOnboarding(user);
-    if (userData.onboardingDone) {
-      document.getElementById('app').style.display = 'block';
-      setGreeting();
-      navigateTo('home');
-      loadMyGardens();
-      initWeather();
-      if (typeof renderWhatToPlantNow === 'function') renderWhatToPlantNow();
-      if (typeof initMessaging === 'function') initMessaging();
+    // Always boot the app — onboarding shows as an overlay on top if needed
+    document.getElementById('app').style.display = 'block';
+    setGreeting();
+    navigateTo('home');
+    loadMyGardens();
+    initWeather();
+    if (typeof renderWhatToPlantNow === 'function') renderWhatToPlantNow();
+    if (typeof initMessaging === 'function') initMessaging();
+
+    // Show onboarding overlay if not yet completed (non-blocking — app loads behind it)
+    if (!userData.onboardingDone) {
+      await checkOnboarding(user);
+    } else {
+      if (userData.location) updateLocationDisplay();
     }
+
   } else {
+    // Not signed in — show login screen
     document.getElementById('onboarding').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
     showObScreen('ob-login');
