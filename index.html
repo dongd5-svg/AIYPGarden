@@ -17,7 +17,8 @@
     /* ── Critical layout fix ── */
     html, body { height: 100%; margin: 0; }
     #app {
-      height: 100vh;
+      /* Use dvh so it respects the actual visible viewport on mobile browsers */
+      height: 100dvh;
       display: flex !important;
       flex-direction: column !important;
       overflow: hidden !important;
@@ -62,7 +63,7 @@
     }
 
     @media (min-width: 768px) { .page:not(#page-garden) { padding: 2rem 2.5rem 2.5rem; } }
-    @media (max-width: 767px) { .page:not(#page-garden) { padding: 1rem 0.9rem calc(var(--mob-nav-h) + 1rem) !important; } }
+    @media (max-width: 767px) { .page:not(#page-garden) { padding: 1rem 0.9rem calc(var(--mob-nav-h) + env(safe-area-inset-bottom, 0px) + 1rem) !important; } }
 
     /* ── Mobile modal — instant, no sticky lag ── */
     #modal-overlay { pointer-events: none; }

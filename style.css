@@ -207,6 +207,8 @@ body {
   background: linear-gradient(135deg, var(--green-1), var(--green-2));
   display: flex; align-items: center;
   padding: 0 1.5rem; gap: 1rem;
+  /* Push content below status bar on notched devices */
+  padding-top: max(0px, env(safe-area-inset-top, 0px));
   box-shadow: 0 2px 12px rgba(0,0,0,0.15);
   z-index: 100;
 }
@@ -236,13 +238,14 @@ body {
 /* Mobile bottom nav */
 #mobile-nav {
   display: none; /* shown via media query */
-  height: var(--mob-nav-h);
+  /* Height includes safe area inset for home indicator */
+  height: calc(var(--mob-nav-h) + env(safe-area-inset-bottom, 0px));
   background: var(--surface);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
-  display: flex; align-items: center; justify-content: space-around;
+  display: flex; align-items: flex-start; justify-content: space-around;
   padding: 0 0.5rem;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 -4px 20px rgba(45,106,39,0.08);
   z-index: 100;
 }
@@ -877,7 +880,7 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 2px solid #e67e00 !im
 /* Mobile tile modal */
 #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 1000; align-items: flex-end; justify-content: center; pointer-events: none; }
 #modal-overlay.open { display: flex; pointer-events: auto; }
-#modal-box { background: var(--surface); width: 100%; max-height: 72vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 0.5rem 1.2rem 2.5rem; overflow-y: auto; box-shadow: 0 -8px 40px rgba(0,0,0,0.2); animation: slideUp 0.2s ease-out both; transform: translateY(100%); }
+#modal-box { background: var(--surface); width: 100%; max-height: 72vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 0.5rem 1.2rem max(2.5rem, calc(1.5rem + env(safe-area-inset-bottom, 0px))); overflow-y: auto; box-shadow: 0 -8px 40px rgba(0,0,0,0.2); animation: slideUp 0.2s ease-out both; transform: translateY(100%); }
 #modal-overlay.open #modal-box { transform: translateY(0); }
 #modal-overlay.closing #modal-box { animation: slideDown 0.18s ease-in forwards; }
 .modal-handle { width: 40px; height: 4px; background: var(--border-2); border-radius: 2px; margin: 0.8rem auto 0.8rem; }
@@ -916,17 +919,22 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 2px solid #e67e00 !im
   body { overflow: hidden; }
   #app { padding-bottom: 0; }
 
-  /* Pages wrapper takes full height minus mobile nav */
+  /* Pages wrapper: full viewport minus nav, accounting for safe area */
   #pages-wrapper {
-    height: calc(100vh - var(--mob-nav-h));
+    height: calc(100dvh - var(--mob-nav-h) - env(safe-area-inset-bottom, 0px));
   }
 
-  .garden-page-header { padding: 0 0.6rem; min-height: 50px; }
+  .garden-page-header {
+    padding: 0 0.6rem;
+    min-height: 50px;
+    /* Push below status bar on notched phones */
+    padding-top: env(safe-area-inset-top, 0px);
+  }
   .garden-title-area h1 { font-size: 1rem; }
   .header-action-btn { width: 30px; height: 30px; font-size: 0.85rem; }
   .season-btn { width: 28px; height: 28px; }
 
-  #garden-view-layout { display: block; height: calc(100dvh - 50px - var(--mob-nav-h)); overflow: hidden; }
+  #garden-view-layout { display: block; height: calc(100dvh - 50px - env(safe-area-inset-top, 0px) - var(--mob-nav-h) - env(safe-area-inset-bottom, 0px)); overflow: hidden; }
   .garden-col { flex: none; width: 100%; height: 100%; padding: 1rem 0.8rem; }
   #garden-container { max-width: 100%; max-height: 100%; width: 100% !important; height: auto !important; aspect-ratio: 1; }
   .panel-col { display: none; }
@@ -1804,24 +1812,6 @@ body:has(#offline-banner[style*="flex"]) #app {
   font-size: 0.8rem; color: var(--text-3);
   margin: 0 0 0.8rem; line-height: 1.4;
 }
-.subgrid-header { padding-bottom: 0.5rem; }
-.subgrid-size-row {
-  display: flex; align-items: center; gap: 0.6rem;
-  margin-bottom: 0.8rem; flex-wrap: wrap;
-}
-.subgrid-size-row label {
-  font-size: 0.78rem; font-weight: 700;
-  color: var(--text-3); flex-shrink: 0;
-}
-.subgrid-size-btns { display: flex; gap: 0.3rem; flex-wrap: wrap; }
-.sg-size-btn {
-  padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 700;
-  border: 1.5px solid var(--border-2); border-radius: var(--radius-sm);
-  background: var(--surface); cursor: pointer; font-family: var(--font);
-  transition: all 0.12s; color: var(--text-2);
-}
-.sg-size-btn:hover  { border-color: var(--green-3); color: var(--green-1); }
-.sg-size-btn.active { background: var(--green-2); border-color: var(--green-2); color: #fff; }
 
 /* Grid resize controls */
 .sg-resize-controls {

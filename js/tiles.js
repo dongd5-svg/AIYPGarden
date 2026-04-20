@@ -155,9 +155,6 @@ function renderGrid() {
   }
 
   if (mergeMode) applyMergeModeUI();
-
-  // Show sub-grid indicators on tiles that have sub-grid data
-  if (typeof applySubgridIndicators === 'function') applySubgridIndicators();
 }
 
 // ── Task priority color on tile ───────────────────────────────────
@@ -235,6 +232,7 @@ function openPanel(id) {
   document.getElementById('descInput').value   = d.description || '';
   document.getElementById('imgInput').value    = d.imageUrl    || '';
   document.getElementById('colorInput').value  = d.color       || '#e8ffd6';
+  renderColorSwatches('colorSwatches', 'colorInput', d.color || '#e8ffd6');
   document.getElementById('splitBtn').style.display = d.mergeGroup ? 'inline-block' : 'none';
   document.getElementById('tasksTileLabel').textContent  = d.title || 'This plot';
   document.getElementById('historyTileLabel').textContent = d.title || 'This plot';
@@ -246,9 +244,6 @@ function openPanel(id) {
   switchPanelTab('plot');
   refreshTileTasksList(id);
   refreshPhotoTimeline(id);
-
-  // Load sub-grid data (used if user switches to Sub-grid tab)
-  if (typeof loadSubgridForTile === 'function') loadSubgridForTile(id);
 }
 
 function handleTileClick(id) {
@@ -355,19 +350,17 @@ document.getElementById('splitBtn').onclick = async () => {
 };
 
 // ── Upload btn ────────────────────────────────────────────────────
-const _tileUploadBtn      = document.getElementById('tileUploadBtn');
-const _modalTileUploadBtn = document.getElementById('modal-tileUploadBtn');
-if (_tileUploadBtn)      _tileUploadBtn.onclick      = () => uploadTileImage(false);
-if (_modalTileUploadBtn) _modalTileUploadBtn.onclick  = () => uploadTileImage(true);
+const _tileUploadBtn = document.getElementById('tileUploadBtn');
+if (_tileUploadBtn) _tileUploadBtn.onclick = () => uploadTileImage(false);
 
 async function uploadTileImage(isMobile) {
-  const btn     = document.getElementById(isMobile ? 'modal-tileUploadBtn' : 'tileUploadBtn');
-  const labelEl = document.getElementById(isMobile ? 'modalTileUploadLabel' : 'tileUploadLabel');
+  const btn     = document.getElementById('tileUploadBtn');
+  const labelEl = document.getElementById('tileUploadLabel');
   if (btn) btn.disabled = true;
   try {
     const url = await uploadImage({ path: `tiles/${currentUser.uid}`, labelEl });
-    document.getElementById('imgInput').value       = url;
-    document.getElementById('modal-imgInput').value = url;
+    document.getElementById('imgInput').value = url;
+    if (isMobile) document.getElementById('modal-imgInput').value = url;
     showToast('Photo uploaded!');
   } catch(e) {
     if (e.message !== 'cancelled') alert('Upload failed: ' + e.message);
@@ -627,6 +620,7 @@ mergeCancelBtn.onclick = () => toggleMergeMode(false);
     mTitle.textContent = d.title || 'Empty Plot';
     mTitleIn.value = d.title||''; mDesc.value=d.description||'';
     mImg.value=d.imageUrl||''; mColor.value=d.color||'#e8ffd6';
+    renderColorSwatches('modal-colorSwatches', 'modal-colorInput', d.color || '#e8ffd6');
     if (mSplit) mSplit.style.display = d.mergeGroup ? 'inline-block' : 'none';
     // Switch to plot tab
     ['mPanelPlot','mPanelTasks','mPanelHistory','mPanelSubgrid'].forEach(id =>
