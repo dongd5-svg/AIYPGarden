@@ -17,8 +17,9 @@
     /* ── Critical layout fix ── */
     html, body { height: 100%; margin: 0; }
     #app {
-      /* Use dvh so it respects the actual visible viewport on mobile browsers */
-      height: 100dvh;
+      height: 100vh;   /* fallback: older browsers */
+      height: 100svh;  /* stable viewport: ignores retracting browser chrome */
+      height: 100dvh;  /* dynamic viewport: best on modern browsers */
       display: flex !important;
       flex-direction: column !important;
       overflow: hidden !important;
