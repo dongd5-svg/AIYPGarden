@@ -85,9 +85,10 @@ function buildGardenCard(gardenId, data, isOwn) {
   card.className = 'garden-card';
 
   const rows = data.rows || 6, cols = data.cols || 6;
-  const pR = Math.min(rows, 12), pC = Math.min(cols, 12);
+  // Clamp preview to max 18 cells per axis so cells never become invisible
+  const pR = Math.min(rows, 18), pC = Math.min(cols, 18);
 
-  // Mini preview grid
+  // Mini preview grid — always fills the square container
   const preview = document.createElement('div');
   preview.className = 'garden-card-preview';
   preview.style.gridTemplateColumns = `repeat(${pC},1fr)`;
@@ -100,11 +101,13 @@ function buildGardenCard(gardenId, data, isOwn) {
     preview.appendChild(cell);
   }
 
-  // Fetch tile colors async
+  // Fetch tile colors async — show what's actually planted
   db.collection('gardens').doc(gardenId).collection('tiles').get().then(snap => {
     snap.forEach(doc => {
-      if (cellMap[doc.id] && doc.data().color)
-        cellMap[doc.id].style.background = doc.data().color;
+      const cell = cellMap[doc.id];
+      if (!cell) return;
+      const d = doc.data();
+      if (d.color) cell.style.background = d.color;
     });
   });
 

@@ -7,12 +7,20 @@
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Ants In Your Plants"/>
-  <meta name="theme-color" content="#3d7035"/>
+  <meta name="theme-color" content="#2a5e24"/>
   <meta name="description" content="Plan, track, and grow your best garden yet."/>
   <link rel="manifest" href="manifest.json"/>
   <title>Ants In Your Plants</title>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Schoolbell&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+
+  <!-- Preconnect to external origins so DNS/TLS handshakes happen early -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link rel="preconnect" href="https://www.gstatic.com"/>
+  <link rel="preconnect" href="https://firestore.googleapis.com"/>
+
+  <!-- Fonts — display=swap means text shows in fallback font immediately -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Schoolbell&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
   <style>
     /* ── Critical layout fix ── */
     html, body { height: 100%; margin: 0; }
@@ -99,12 +107,10 @@
     <div class="ob-login-card">
       <div class="ob-logo">🌿</div>
       <h1 class="ob-title">Ants In Your Plants</h1>
-      <p class="ob-sub">Your garden journal, planner & tracker</p>
       <button id="googleBtn" class="ob-google-btn">
         <svg width="20" height="20" viewBox="0 0 18 18"><path fill="#fff" d="M9 3.48c1.69 0 2.83.73 3.48 1.34l2.54-2.48C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l2.91 2.26C4.6 5.05 6.62 3.48 9 3.48z"/><path fill="#fff" d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.1.83-.64 2.08-1.84 2.92l2.84 2.2c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#fff" d="M3.88 10.78A5.54 5.54 0 0 1 3.58 9c0-.62.11-1.22.29-1.78L.96 4.96A9.008 9.008 0 0 0 0 9c0 1.45.35 2.82.96 4.04l2.92-2.26z"/><path fill="#fff" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.84-2.2c-.76.53-1.78.9-3.12.9-2.38 0-4.4-1.57-5.12-3.74L.97 13.04C2.45 15.98 5.48 18 9 18z"/></svg>
-        Sign in with Google
+        Continue with Google
       </button>
-      <p class="ob-login-note">Free to use · No credit card needed</p>
     </div>
   </div>
 
@@ -125,23 +131,23 @@
           <span class="ob-level-emoji">🌱</span>
           <div class="ob-level-text">
             <strong>Beginner</strong>
-            <span>Just getting started — simple grid, tasks & weather</span>
+            <span>Simple grid, tasks & weather</span>
           </div>
           <span class="ob-level-check">○</span>
         </button>
         <button class="ob-level-btn selected" data-mode="grower">
           <span class="ob-level-emoji">🌿</span>
           <div class="ob-level-text">
-            <strong>Grower</strong>
-            <span>Calendar, harvest tracking & plant care reminders</span>
+            <strong>Intermediate</strong>
+            <span>Adds calendar, harvest log & care reminders</span>
           </div>
           <span class="ob-level-check">○</span>
         </button>
         <button class="ob-level-btn" data-mode="expert">
           <span class="ob-level-emoji">🌳</span>
           <div class="ob-level-text">
-            <strong>Expert</strong>
-            <span>Crop rotation, seed inventory, yield analytics & more</span>
+            <strong>Master</strong>
+            <span>Full toolkit — crop rotation, seed inventory & more</span>
           </div>
           <span class="ob-level-check">○</span>
         </button>
@@ -464,8 +470,8 @@
       <div class="sheet-section-title">Garden Mode</div>
       <div class="mode-toggle-row">
         <button class="mode-toggle-btn" data-mode="beginner">🌱 Beginner</button>
-        <button class="mode-toggle-btn active" data-mode="grower">🌿 Grower</button>
-        <button class="mode-toggle-btn" data-mode="expert">🌳 Expert</button>
+        <button class="mode-toggle-btn active" data-mode="grower">🌿 Intermediate</button>
+        <button class="mode-toggle-btn" data-mode="expert">🌳 Master</button>
       </div>
     </div>
 
@@ -836,43 +842,24 @@
 </div>
 
 <!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script>
-  firebase.initializeApp({
-    apiKey: "AIzaSyDFVgPG-oauNpgmkXWK0Wvj6z4PmyqWNY0",
-    authDomain: "aiyp-interactive-garden.firebaseapp.com",
-    projectId: "aiyp-interactive-garden",
-    storageBucket: "aiyp-interactive-garden.firebasestorage.app",
-    messagingSenderId: "388306498",
-    appId: "1:388306498:web:0d3beafd58dcff93c9bfdb"
-  });
-
-  // Enable offline persistence — app works without network
-  firebase.firestore().enablePersistence({ synchronizeTabs: true })
-    .catch(err => {
-      if (err.code === 'failed-precondition') {
-        console.warn('Offline persistence: multiple tabs open');
-      } else if (err.code === 'unimplemented') {
-        console.warn('Offline persistence not supported in this browser');
-      }
-    });
-</script>
-<script src="js/utils.js"></script>
-<script src="js/mode.js"></script>
-<script src="js/app.js"></script>
-<script src="js/onboarding.js"></script>
-<script src="js/settings.js"></script>
-<script src="js/gardens.js"></script>
-<script src="js/plant-library.js"></script>
-<script src="js/plants.js"></script>
-<script src="js/tiles.js"></script>
-<script src="js/tasks.js"></script>
-<script src="js/calendar.js"></script>
-<script src="js/tracking.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script defer src="js/firebase-init.js"></script>
+<script defer src="js/utils.js"></script>
+<script defer src="js/mode.js"></script>
+<script defer src="js/app.js"></script>
+<script defer src="js/onboarding.js"></script>
+<script defer src="js/settings.js"></script>
+<script defer src="js/gardens.js"></script>
+<script defer src="js/plant-library.js"></script>
+<script defer src="js/plants.js"></script>
+<script defer src="js/tiles.js"></script>
+<script defer src="js/tasks.js"></script>
+<script defer src="js/calendar.js"></script>
+<script defer src="js/tracking.js"></script>
 <!-- CROP ROTATION MODAL -->
 <div id="crop-rotation-overlay">
   <div id="crop-rotation-modal">
@@ -1152,10 +1139,10 @@
   </div>
 </div>
 
-<script src="js/plot-shape.js"></script>
-<script src="js/weather.js"></script>
-<script src="js/advanced.js"></script>
-<script src="js/batch4.js"></script>
-<script src="js/batch6.js"></script>
+<script defer src="js/plot-shape.js"></script>
+<script defer src="js/weather.js"></script>
+<script defer src="js/advanced.js"></script>
+<script defer src="js/batch4.js"></script>
+<script defer src="js/batch6.js"></script>
 </body>
 </html>

@@ -151,7 +151,6 @@ h1, h2, h3 { font-family: var(--font-brand); letter-spacing: 0.01em; }
   box-shadow: 3px 4px 0 rgba(0,0,0,0.15);
 }
 .ob-google-btn:hover { background: rgba(255,255,255,0.25); transform: translate(-1px,-1px); box-shadow: 4px 5px 0 rgba(0,0,0,0.2); }
-.ob-login-note { color: rgba(255,255,255,0.4); font-size: 0.8rem; margin: 0; }
 
 /* ── Flow steps (mode + location) ───────────────────────────────*/
 .ob-flow-wrap {
@@ -385,10 +384,22 @@ h1, h2, h3 { font-family: var(--font-brand); letter-spacing: 0.01em; }
 }
 .garden-card:hover { transform: translate(-2px, -2px); box-shadow: 6px 7px 0 var(--tan-3); border-color: var(--green-4); }
 .garden-card-preview {
-  width: 100%; aspect-ratio: 4/3; display: grid;
-  background: var(--green-6);
+  width: 100%;
+  aspect-ratio: 1; /* always square — looks clean for any garden shape */
+  display: grid;
+  background: var(--green-5);
+  overflow: hidden;
+  gap: 1.5px;
+  padding: 1.5px;
+  box-sizing: border-box;
 }
-.mini-tile { background: var(--green-6); border: 0.5px solid rgba(142,203,104,0.4); }
+.mini-tile {
+  background: var(--green-6);
+  border-radius: 1px;
+  min-width: 0; min-height: 0;
+}
+/* Disabled cells (L-shape / U-shape gaps) */
+.mini-tile.mini-tile-gap { background: var(--green-5); }
 .garden-card-body { padding: 0.9rem 1rem; background: var(--surface); }
 .garden-card-meta {
   display: flex; gap: 0.4rem; flex-wrap: wrap;
@@ -559,17 +570,17 @@ h1, h2, h3 { font-family: var(--font-brand); letter-spacing: 0.01em; }
 #garden-container {
   background: var(--green-6);
   border-radius: var(--radius-lg);
-  /* Chunky hand-drawn style border */
   border: 3px solid var(--green-3);
   box-shadow: 5px 6px 0 var(--green-5), var(--shadow-md);
   display: grid; overflow: hidden;
   max-width: min(65vh, 100%); max-height: min(65vh, 100%);
   width: 100%; aspect-ratio: 1;
+  /* Contain paints to this element — browser skips repainting outside */
+  contain: layout style;
 }
 
 /* Tiles */
 .tile {
-  /* Clearly visible green with a dashed border between cells */
   background: var(--green-6);
   border: 1.5px dashed rgba(90,148,72,0.35);
   display: flex; align-items: center; justify-content: center;
@@ -580,6 +591,8 @@ h1, h2, h3 { font-family: var(--font-brand); letter-spacing: 0.01em; }
   transition: filter 0.12s, transform 0.1s;
   position: relative; z-index: 0; line-height: 1.2;
   font-family: var(--font-brand); font-weight: 400;
+  /* GPU-accelerated hover for smooth tile interactions */
+  will-change: transform;
 }
 .tile:hover { filter: brightness(0.9) saturate(1.3); transform: scale(1.06); z-index: 1; }
 .tile.active { border: 2px solid var(--green-1) !important; transform: scale(1.08); z-index: 2; filter: brightness(0.85); box-shadow: 0 0 0 2px rgba(45,106,39,0.3); }
@@ -733,8 +746,8 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 2px solid #e67e00 !im
 .modal-body::-webkit-scrollbar-thumb { background: var(--green-4); border-radius: 99px; }
 
 @keyframes modalIn {
-  from { opacity: 0; transform: translateY(16px) scale(0.97); }
-  to   { opacity: 1; transform: none; }
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 .modal-close-btn {
   position: absolute; top: 1rem; right: 1rem;
