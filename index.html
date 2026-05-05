@@ -542,65 +542,93 @@
 <div id="create-modal-overlay">
   <div id="create-modal">
     <button class="modal-close-btn" id="createModalCloseBtn">✕</button>
-    <div class="create-modal-icon">🌱</div>
-    <h2>New Garden</h2>
-    <p class="create-modal-sub">Set up your growing space</p>
-    <div class="field"><label for="gardenNameInput">Garden Name</label><input id="gardenNameInput" type="text" placeholder="e.g. Backyard Raised Beds" maxlength="50"/></div>
 
+    <div class="create-modal-header">
+      <div class="create-modal-icon">🌱</div>
+      <h2>New Garden</h2>
+      <p class="create-modal-sub">What are you growing?</p>
+    </div>
+
+    <!-- Name -->
     <div class="field">
-      <label>Garden Shape</label>
+      <label for="gardenNameInput">Garden Name</label>
+      <input id="gardenNameInput" type="text" placeholder="e.g. Backyard Raised Beds" maxlength="50"/>
+    </div>
+
+    <!-- Shape — emoji grid -->
+    <div class="field">
+      <label>Shape</label>
       <div class="shape-picker" id="shapePicker">
-        <button class="shape-btn active" data-shape="square" title="Square">
-          <div class="shape-icon shape-square"></div>
+        <button class="shape-btn active" data-shape="square">
+          <span class="shape-emoji">⬛</span>
           <span>Square</span>
         </button>
-        <button class="shape-btn" data-shape="wide" title="Wide bed">
-          <div class="shape-icon shape-wide"></div>
+        <button class="shape-btn" data-shape="wide">
+          <span class="shape-emoji">▬</span>
           <span>Wide</span>
         </button>
-        <button class="shape-btn" data-shape="tall" title="Tall bed">
-          <div class="shape-icon shape-tall"></div>
+        <button class="shape-btn" data-shape="tall">
+          <span class="shape-emoji">▮</span>
           <span>Tall</span>
         </button>
-        <button class="shape-btn" data-shape="tower" title="Vertical tower">
-          <div class="shape-icon shape-tower"></div>
+        <button class="shape-btn" data-shape="tower">
+          <span class="shape-emoji">🏙</span>
           <span>Tower</span>
         </button>
-        <button class="shape-btn" data-shape="strip" title="Raised bed strip">
-          <div class="shape-icon shape-strip"></div>
-          <span>Strip</span>
-        </button>
-        <button class="shape-btn" data-shape="lshape" title="L-shape">
-          <div class="shape-icon shape-lshape"></div>
+        <button class="shape-btn" data-shape="lshape">
+          <span class="shape-emoji">⌐</span>
           <span>L-Shape</span>
         </button>
-        <button class="shape-btn" data-shape="ushape" title="U-shape">
-          <div class="shape-icon shape-ushape"></div>
+        <button class="shape-btn" data-shape="ushape">
+          <span class="shape-emoji">⊓</span>
           <span>U-Shape</span>
         </button>
-        <button class="shape-btn" data-shape="custom" title="Custom size">
-          <div class="shape-icon shape-custom">✏</div>
+        <button class="shape-btn" data-shape="custom">
+          <span class="shape-emoji">✏️</span>
           <span>Custom</span>
         </button>
       </div>
+    </div>
 
-      <!-- Custom size inputs — shown only when Custom is selected -->
-      <div id="customSizeInputs" style="display:none">
-        <div class="grid-size-inputs" style="margin-top:0.8rem">
-          <div class="size-input-group"><label for="gridRows">Rows</label><div class="size-stepper"><button class="stepper-btn" data-target="gridRows" data-dir="-1">−</button><input id="gridRows" type="number" min="1" max="20" value="6"/><button class="stepper-btn" data-target="gridRows" data-dir="1">＋</button></div></div>
-          <div class="size-x">×</div>
-          <div class="size-input-group"><label for="gridCols">Cols</label><div class="size-stepper"><button class="stepper-btn" data-target="gridCols" data-dir="-1">−</button><input id="gridCols" type="number" min="1" max="20" value="6"/><button class="stepper-btn" data-target="gridCols" data-dir="1">＋</button></div></div>
+    <!-- Custom size (shown only for custom shape) -->
+    <div id="customSizeInputs" style="display:none">
+      <div class="grid-size-inputs">
+        <div class="size-input-group">
+          <label for="gridRows">Rows</label>
+          <div class="size-stepper">
+            <button class="stepper-btn" data-target="gridRows" data-dir="-1">−</button>
+            <input id="gridRows" type="number" min="1" max="20" value="6"/>
+            <button class="stepper-btn" data-target="gridRows" data-dir="1">+</button>
+          </div>
         </div>
-      </div>
-
-      <div class="grid-preview-wrap">
-        <div id="gridPreview" class="grid-preview"></div>
-        <span id="gridPreviewLabel" class="grid-preview-label">36 plots</span>
+        <div class="size-x">×</div>
+        <div class="size-input-group">
+          <label for="gridCols">Cols</label>
+          <div class="size-stepper">
+            <button class="stepper-btn" data-target="gridCols" data-dir="-1">−</button>
+            <input id="gridCols" type="number" min="1" max="20" value="6"/>
+            <button class="stepper-btn" data-target="gridCols" data-dir="1">+</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="field"><label>Visibility</label><div class="visibility-toggle"><button class="vis-btn active" id="visPrivate">🔒 Private</button><button class="vis-btn" id="visPublic">🌍 Public</button></div></div>
-    <button class="btn-create full-width" id="confirmCreateGardenBtn">Create Garden 🌿</button>
+    <!-- Grid preview -->
+    <div class="grid-preview-wrap">
+      <div id="gridPreview" class="grid-preview"></div>
+      <span id="gridPreviewLabel" class="grid-preview-label">36 plots</span>
+    </div>
+
+    <!-- Visibility -->
+    <div class="field">
+      <label>Visibility</label>
+      <div class="visibility-toggle">
+        <button class="vis-btn active" id="visPrivate">🔒 Private</button>
+        <button class="vis-btn" id="visPublic">🌍 Public</button>
+      </div>
+    </div>
+
+    <button class="btn-create full-width" id="confirmCreateGardenBtn">Plant it! 🌿</button>
   </div>
 </div>
 
