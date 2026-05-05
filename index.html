@@ -99,127 +99,81 @@
     <div class="ob-login-card">
       <div class="ob-logo">🌿</div>
       <h1 class="ob-title">Ants In Your Plants</h1>
-      <p class="ob-sub">Plan, track, and grow your best garden yet</p>
+      <p class="ob-sub">Your garden journal, planner & tracker</p>
       <button id="googleBtn" class="ob-google-btn">
         <svg width="20" height="20" viewBox="0 0 18 18"><path fill="#fff" d="M9 3.48c1.69 0 2.83.73 3.48 1.34l2.54-2.48C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l2.91 2.26C4.6 5.05 6.62 3.48 9 3.48z"/><path fill="#fff" d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.1.83-.64 2.08-1.84 2.92l2.84 2.2c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#fff" d="M3.88 10.78A5.54 5.54 0 0 1 3.58 9c0-.62.11-1.22.29-1.78L.96 4.96A9.008 9.008 0 0 0 0 9c0 1.45.35 2.82.96 4.04l2.92-2.26z"/><path fill="#fff" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.84-2.2c-.76.53-1.78.9-3.12.9-2.38 0-4.4-1.57-5.12-3.74L.97 13.04C2.45 15.98 5.48 18 9 18z"/></svg>
-        Continue with Google
+        Sign in with Google
       </button>
+      <p class="ob-login-note">Free to use · No credit card needed</p>
     </div>
   </div>
 
-  <!-- Step 1: Mode picker -->
+  <!-- Step 1: Pick your level -->
   <div class="ob-screen" id="ob-mode">
-    <div class="ob-step-header">
-      <div class="ob-step-dots">
-        <span class="ob-dot active"></span><span class="ob-dot"></span><span class="ob-dot"></span>
+    <div class="ob-flow-wrap">
+      <div class="ob-flow-progress">
+        <div class="ob-progress-bar"><div class="ob-progress-fill" style="width:50%"></div></div>
+        <span class="ob-progress-label">1 of 2</span>
       </div>
-      <button class="ob-skip" id="skipModeBtn">Skip</button>
-    </div>
-    <div class="ob-content">
-      <h2>How do you want to use<br>the app?</h2>
-      <p class="ob-sub">You can always change this in settings</p>
-      <div class="mode-cards">
-        <div class="mode-card" data-mode="beginner">
-          <div class="mode-emoji">🌱</div>
-          <div class="mode-name">Beginner</div>
-          <div class="mode-desc">Just getting started! Keep it simple and fun.</div>
-          <ul class="mode-features">
-            <li>✓ Garden grid</li>
-            <li>✓ Basic tasks</li>
-            <li>✓ Weather</li>
-            <li>✓ Plant lookup</li>
-          </ul>
-        </div>
-        <div class="mode-card selected" data-mode="grower">
-          <div class="mode-badge">Most popular</div>
-          <div class="mode-emoji">🌿</div>
-          <div class="mode-name">Grower</div>
-          <div class="mode-desc">Getting serious! Add planning tools and track your progress.</div>
-          <ul class="mode-features">
-            <li>✓ Everything in Beginner</li>
-            <li>✓ Harvest & spending log</li>
-            <li>✓ Calendar & journal</li>
-            <li>✓ Frost date alerts</li>
-            <li>✓ Plant care reminders</li>
-          </ul>
-        </div>
-        <div class="mode-card" data-mode="expert">
-          <div class="mode-emoji">🌳</div>
-          <div class="mode-name">Expert</div>
-          <div class="mode-desc">Full toolkit for seasoned gardeners who track everything.</div>
-          <ul class="mode-features">
-            <li>✓ Everything in Grower</li>
-            <li>✓ Crop rotation tracker</li>
-            <li>✓ Seed inventory</li>
-            <li>✓ Soil amendment log</li>
-            <li>✓ Pest & disease log</li>
-            <li>✓ Yield analytics</li>
-          </ul>
-        </div>
+
+      <div class="ob-flow-icon">🌱</div>
+      <h2 class="ob-flow-title">What's your gardening level?</h2>
+      <p class="ob-flow-sub">We'll set up the right tools for you. You can change this any time.</p>
+
+      <div class="ob-level-list">
+        <button class="ob-level-btn" data-mode="beginner">
+          <span class="ob-level-emoji">🌱</span>
+          <div class="ob-level-text">
+            <strong>Beginner</strong>
+            <span>Just getting started — simple grid, tasks & weather</span>
+          </div>
+          <span class="ob-level-check">○</span>
+        </button>
+        <button class="ob-level-btn selected" data-mode="grower">
+          <span class="ob-level-emoji">🌿</span>
+          <div class="ob-level-text">
+            <strong>Grower</strong>
+            <span>Calendar, harvest tracking & plant care reminders</span>
+          </div>
+          <span class="ob-level-check">○</span>
+        </button>
+        <button class="ob-level-btn" data-mode="expert">
+          <span class="ob-level-emoji">🌳</span>
+          <div class="ob-level-text">
+            <strong>Expert</strong>
+            <span>Crop rotation, seed inventory, yield analytics & more</span>
+          </div>
+          <span class="ob-level-check">○</span>
+        </button>
       </div>
-      <button class="ob-next-btn" id="confirmModeBtn">Let's grow! 🌱</button>
+
+      <button class="ob-continue-btn" id="confirmModeBtn">Continue →</button>
     </div>
   </div>
 
-  <!-- Step 2: Location for frost dates -->
+  <!-- Step 2: Location -->
   <div class="ob-screen" id="ob-location">
-    <div class="ob-step-header">
-      <div class="ob-step-dots">
-        <span class="ob-dot"></span><span class="ob-dot active"></span><span class="ob-dot"></span>
+    <div class="ob-flow-wrap">
+      <div class="ob-flow-progress">
+        <div class="ob-progress-bar"><div class="ob-progress-fill" style="width:100%"></div></div>
+        <span class="ob-progress-label">2 of 2</span>
       </div>
-      <button class="ob-skip" id="skipLocationBtn">Skip</button>
-    </div>
-    <div class="ob-content">
-      <div class="ob-icon-big">🌡️</div>
-      <h2>Where is your garden?</h2>
-      <p class="ob-sub">We'll use this to show frost date alerts and personalise plant care reminders</p>
+
+      <div class="ob-flow-icon">📍</div>
+      <h2 class="ob-flow-title">Where is your garden?</h2>
+      <p class="ob-flow-sub">Used for frost date alerts and local weather. Optional — you can skip this.</p>
+
       <div class="ob-location-options">
         <button class="ob-loc-btn" id="detectLocationBtn">📍 Detect my location</button>
-        <div class="ob-or">or enter your zip / postal code</div>
-        <div class="field">
-          <input id="zipInput" type="text" placeholder="e.g. 90210 or SW1A 1AA" maxlength="10"/>
-        </div>
+        <div class="ob-or">— or enter your zip / postal code —</div>
+        <input id="zipInput" type="text" placeholder="e.g. 90210 or SW1A 1AA" maxlength="10" class="ob-zip-input"/>
       </div>
       <div id="locationStatus" class="location-status" style="display:none"></div>
-      <button class="ob-next-btn" id="confirmLocationBtn">Continue →</button>
-    </div>
-  </div>
 
-  <!-- Step 3: Create first garden -->
-  <div class="ob-screen" id="ob-garden">
-    <div class="ob-step-header">
-      <div class="ob-step-dots">
-        <span class="ob-dot"></span><span class="ob-dot"></span><span class="ob-dot active"></span>
+      <div class="ob-location-actions">
+        <button class="ob-continue-btn" id="confirmLocationBtn">Let's grow! 🌱</button>
+        <button class="ob-skip-link" id="skipLocationBtn">Skip for now</button>
       </div>
-      <button class="ob-skip" id="skipGardenBtn">Do this later</button>
-    </div>
-    <div class="ob-content">
-      <div class="ob-icon-big">🪴</div>
-      <h2>Create your first garden</h2>
-      <p class="ob-sub">Give it a name and choose a size</p>
-      <div class="field">
-        <input id="ob-gardenName" type="text" placeholder="e.g. Backyard Beds" maxlength="50"/>
-      </div>
-      <div class="ob-size-row">
-        <div class="ob-size-group">
-          <label>Rows</label>
-          <div class="size-stepper">
-            <button class="stepper-btn" data-target="ob-rows" data-dir="-1">−</button>
-            <input id="ob-rows" type="number" min="2" max="20" value="6"/>
-            <button class="stepper-btn" data-target="ob-cols" data-dir="1">＋</button>
-          </div>
-        </div>
-        <div class="ob-size-x">×</div>
-        <div class="ob-size-group">
-          <label>Cols</label>
-          <div class="size-stepper">
-            <button class="stepper-btn" data-target="ob-cols" data-dir="-1">−</button>
-            <input id="ob-cols" type="number" min="2" max="20" value="6"/>
-            <button class="stepper-btn" data-target="ob-cols" data-dir="1">＋</button>
-          </div>
-        </div>
-      </div>
-      <button class="ob-next-btn" id="createFirstGardenBtn">Create & Start Growing 🌱</button>
     </div>
   </div>
 
@@ -328,6 +282,7 @@
           <button id="gardenSoilLogBtn" class="header-action-btn feature-expert" title="Soil Amendments" style="display:none">🪱</button>
           <button id="gardenPestLogBtn" class="header-action-btn feature-expert" title="Pest & Disease Log" style="display:none">🐛</button>
           <button id="gardenYieldBtn" class="header-action-btn feature-expert" title="Yield Analytics" style="display:none">📈</button>
+          <button id="gardenShareBtn" class="header-action-btn" title="Copy shareable link">🔗</button>
           <button id="gardenSettingsBtn" class="header-action-btn" style="display:none">⚙</button>
         </div>
       </div>

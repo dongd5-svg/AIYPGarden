@@ -48,14 +48,16 @@ auth.onAuthStateChanged(async user => {
     // Always boot the app — onboarding shows as an overlay on top if needed
     document.getElementById('app').style.display = 'block';
     setGreeting();
-    navigateTo('home');
     loadMyGardens();
     initWeather();
     if (typeof renderWhatToPlantNow === 'function') renderWhatToPlantNow();
 
+    // Handle ?g=gardenId deep links — opens garden directly after auth
+    const deepLinked = await handleDeepLink();
+    if (!deepLinked) navigateTo('home');
 
-    // Show onboarding overlay if not yet completed (non-blocking — app loads behind it)
-    if (!userData.onboardingDone) {
+    // Show onboarding only if not yet completed AND not a deep link visitor
+    if (!userData.onboardingDone && !deepLinked) {
       await checkOnboarding(user);
     } else {
       if (userData.location) updateLocationDisplay();
@@ -134,6 +136,12 @@ function openGardenPage(gardenId, gardenData, isOwn) {
   const pw = document.getElementById('pages-wrapper');
   if (pw) pw.scrollTop = 0;
   currentPage = 'garden';
+
+  // Push garden ID to URL so it's shareable
+  const url = new URL(window.location.href);
+  url.searchParams.set('g', gardenId);
+  window.history.pushState({ gardenId }, '', url);
+
   applyMode();
   initTiles(gardenId, gardenData);
   initTasks(gardenId);
@@ -144,9 +152,49 @@ function openGardenPage(gardenId, gardenData, isOwn) {
 function exitGarden() {
   cleanupTiles(); cleanupTasks();
   currentGardenId = null; currentGardenData = null; isGardenOwner = false;
+  // Clean garden ID from URL
+  const url = new URL(window.location.href);
+  url.searchParams.delete('g');
+  window.history.pushState({}, '', url);
 }
 
 document.getElementById('backBtn').onclick = () => { exitGarden(); navigateTo('home'); };
+
+// Share button — copies current garden URL to clipboard
+document.getElementById('gardenShareBtn').onclick = async () => {
+  const url = window.location.href;
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('Link copied! 🔗 Share it with anyone');
+  } catch {
+    // Fallback for browsers that block clipboard
+    prompt('Copy this link:', url);
+  }
+};
+
+// Handle browser back/forward
+window.addEventListener('popstate', () => {
+  const gid = new URL(window.location.href).searchParams.get('g');
+  if (!gid) { exitGarden(); navigateTo('home'); }
+});
+
+// ── Deep link: load garden from URL on startup ────────────────────
+async function handleDeepLink() {
+  const gid = new URL(window.location.href).searchParams.get('g');
+  if (!gid) return false;
+  try {
+    const doc = await db.collection('gardens').doc(gid).get();
+    if (!doc.exists) return false;
+    const data = doc.data();
+    // Only open if public or user is owner/collaborator
+    const isOwn  = currentUser && data.ownerId === currentUser.uid;
+    const isCollab = currentUser && data.collaboratorEmails?.includes(currentUser.email?.toLowerCase());
+    const isPublic = data.visibility === 'public';
+    if (!isOwn && !isCollab && !isPublic) return false;
+    openGardenPage(gid, data, isOwn || false);
+    return true;
+  } catch { return false; }
+}
 
 // ── Color swatches ────────────────────────────────────────────────
 const TILE_COLORS = [

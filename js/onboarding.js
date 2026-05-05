@@ -2,7 +2,7 @@
 // ONBOARDING.JS — first-login flow + profile sheet
 // ================================================================
 
-let selectedObMode    = 'standard';
+let selectedObMode    = 'grower';
 let userLocation      = null; // { lat, lon, city, zip }
 let onboardingDone    = false;
 
@@ -54,21 +54,29 @@ function finishOnboarding() {
   if (typeof renderWhatToPlantNow === 'function') renderWhatToPlantNow();
 }
 
-// ── Login screen (handled by app.js googleBtn) ────────────────────
-// After login, auth.onAuthStateChanged calls checkOnboarding
-// which routes here if needed
+// ── Shared link — show context on login screen ────────────────────
+(function() {
+  const gid = new URL(window.location.href).searchParams.get('g');
+  if (gid) {
+    const sub = document.querySelector('#ob-login .ob-sub');
+    if (sub) sub.textContent = 'Sign in to view this garden';
+  }
+})();
 
-// ── Step 1: Mode picker ───────────────────────────────────────────
-document.querySelectorAll('.mode-card').forEach(card => {
-  card.onclick = () => {
-    document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
-    card.classList.add('selected');
-    selectedObMode = card.dataset.mode;
+// ── Step 1: Level picker (new ob-level-btn style) ────────────────
+document.querySelectorAll('.ob-level-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.ob-level-btn').forEach(b => {
+      b.classList.remove('selected');
+      b.querySelector('.ob-level-check').textContent = '○';
+    });
+    btn.classList.add('selected');
+    btn.querySelector('.ob-level-check').textContent = '●';
+    selectedObMode = btn.dataset.mode;
   };
 });
 
 document.getElementById('confirmModeBtn').onclick = () => showObScreen('ob-location');
-document.getElementById('skipModeBtn').onclick    = () => showObScreen('ob-location');
 
 // ── Step 2: Location ──────────────────────────────────────────────
 document.getElementById('detectLocationBtn').onclick = () => {
@@ -135,37 +143,21 @@ document.getElementById('zipInput').addEventListener('change', async function() 
 });
 
 document.getElementById('confirmLocationBtn').onclick = async () => {
+  // Check if zip was typed but not submitted via change event
+  const zipEl = document.getElementById('zipInput');
+  if (zipEl && zipEl.value.trim() && !userLocation) {
+    zipEl.dispatchEvent(new Event('change'));
+    await new Promise(r => setTimeout(r, 1200));
+  }
   if (userLocation) {
     await db.collection('users').doc(currentUser.uid).update({ location: userLocation });
     await fetchFrostDates();
   }
-  showObScreen('ob-garden');
-};
-document.getElementById('skipLocationBtn').onclick = () => showObScreen('ob-garden');
-
-// ── Step 3: First garden ──────────────────────────────────────────
-// Fix stepper buttons in onboarding
-document.querySelectorAll('.stepper-btn').forEach(btn => {
-  btn.onclick = () => {
-    const targetId = btn.dataset.target;
-    const input = document.getElementById(targetId);
-    if (!input) return;
-    const dir = parseInt(btn.dataset.dir);
-    const newVal = Math.min(+input.max || 20, Math.max(+input.min || 2, +input.value + dir));
-    input.value = newVal;
-  };
-});
-
-document.getElementById('createFirstGardenBtn').onclick = async () => {
-  const name = document.getElementById('ob-gardenName').value.trim();
-  if (!name) { document.getElementById('ob-gardenName').focus(); return; }
-  const rows = Math.min(20, Math.max(2, +document.getElementById('ob-rows').value || 6));
-  const cols = Math.min(20, Math.max(2, +document.getElementById('ob-cols').value || 6));
-  await createGardenInFirestore(name, rows, cols, 'private');
   finishOnboarding();
 };
+document.getElementById('skipLocationBtn').onclick = finishOnboarding;
 
-document.getElementById('skipGardenBtn').onclick = finishOnboarding;
+// ── Step 3 removed — no garden creation in onboarding ─────────────
 
 // ── Profile sheet ─────────────────────────────────────────────────
 const profileSheetOverlay = document.getElementById('profile-sheet-overlay');
