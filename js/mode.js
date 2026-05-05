@@ -92,7 +92,7 @@ const FEATURE_LABELS = {
 
 // ── Runtime state ─────────────────────────────────────────────────
 let appMode     = 'grower';
-let appFeatures = { ...MODES.standard.features };
+let appFeatures = { ...MODES.grower.features };
 
 // ── Load from Firestore ───────────────────────────────────────────
 async function loadUserMode(uid) {
@@ -107,7 +107,7 @@ async function loadUserMode(uid) {
     };
   } catch (e) {
     appMode = 'grower';
-    appFeatures = { ...MODES.standard.features };
+    appFeatures = { ...MODES.grower.features };
   }
   applyMode();
 }

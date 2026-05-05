@@ -246,7 +246,7 @@ const PLANT_LIBRARY = [
 // ── Feature-gated access ─────────────────────────────────────────
 function getPlantLibraryData() {
   // In simple mode only return easy plants
-  if (appMode === 'simple') return PLANT_LIBRARY.filter(p => p.difficulty === 'easy');
+  if (appMode === 'beginner') return PLANT_LIBRARY.filter(p => p.difficulty === 'easy');
   return PLANT_LIBRARY;
 }
 
