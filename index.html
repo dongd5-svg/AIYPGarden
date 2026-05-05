@@ -56,8 +56,8 @@
     #page-garden { padding: 0 !important; overflow: hidden !important; }
     #page-garden.active { display: flex !important; flex-direction: column !important; }
 
-    /* Back button — always visible on green header */
-    .back-btn {
+    /* Back button on garden header — white on green */
+    .garden-page-header .back-btn {
       background: rgba(255,255,255,0.2) !important;
       color: #fff !important;
       border: 1px solid rgba(255,255,255,0.35) !important;
@@ -319,7 +319,7 @@
           <button class="season-btn" data-season="winter" title="Winter">❄️</button>
         </div>
         <div class="garden-page-actions">
-          <button id="mergeModeBtn" class="header-action-btn">⊞</button>
+          <button id="mergeModeBtn" class="header-action-btn" title="Merge tiles">⊞</button>
           <button id="gardenTasksBtn" class="header-action-btn">📋</button>
           <button id="gardenJournalBtn" class="header-action-btn feature-grower">📓</button>
           <button id="gardenTrackingBtn" class="header-action-btn feature-grower">📊</button>

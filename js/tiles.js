@@ -495,7 +495,7 @@ function toggleMergeMode(on) {
   mergeSelected.clear();
   document.body.classList.toggle('merge-mode', mergeMode);
   mergeModeBtn.classList.toggle('active', mergeMode);
-  mergeModeBtn.textContent = mergeMode ? '✕ Cancel' : '⊞ Merge';
+  mergeModeBtn.textContent = mergeMode ? '✕' : '⊞';
   if (mergeMode) {
     resetPanel(); activeId = null;
     mergeToolbar.classList.add('visible');
