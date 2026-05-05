@@ -673,22 +673,48 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 2px solid #e67e00 !im
 #create-modal, #settings-modal, #task-modal,
 #journal-modal, #tracking-modal, #photo-modal {
   background: var(--surface); border-radius: var(--radius-xl);
-  padding: 1.8rem; width: 100%; max-width: 500px;
-  max-height: 88vh; overflow-y: auto; position: relative;
-  box-shadow: var(--shadow-lg); animation: modalIn 0.22s ease-out;
+  width: 100%; max-width: 480px;
+  /* Fit to content but cap at viewport — scrollbar stays inside */
+  max-height: min(88vh, 88dvh);
+  display: flex; flex-direction: column;
+  position: relative;
+  box-shadow: var(--shadow-lg), 5px 6px 0 var(--tan-3);
+  border: 2.5px solid var(--tan-3);
+  animation: modalIn 0.22s ease-out;
+  overflow: hidden; /* clip rounded corners cleanly */
 }
+/* Modal inner layout — header sticks, content scrolls */
+.modal-header {
+  padding: 1.4rem 1.8rem 0;
+  flex-shrink: 0;
+  position: relative; /* so absolute close btn is relative to modal not viewport */
+}
+.modal-body {
+  padding: 0 1.8rem 1.8rem;
+  overflow-y: auto;
+  flex: 1;
+  /* Custom scrollbar — thin and on-brand */
+  scrollbar-width: thin;
+  scrollbar-color: var(--green-4) transparent;
+}
+.modal-body::-webkit-scrollbar { width: 5px; }
+.modal-body::-webkit-scrollbar-track { background: transparent; }
+.modal-body::-webkit-scrollbar-thumb { background: var(--green-4); border-radius: 99px; }
+
 @keyframes modalIn {
   from { opacity: 0; transform: translateY(16px) scale(0.97); }
   to   { opacity: 1; transform: none; }
 }
 .modal-close-btn {
   position: absolute; top: 1rem; right: 1rem;
-  background: var(--tan-2); border: none; width: 32px; height: 32px;
-  border-radius: 50%; cursor: pointer; font-size: 0.85rem;
+  background: var(--tan-2); border: 2px solid var(--tan-3);
+  width: 32px; height: 32px; border-radius: 50%;
+  cursor: pointer; font-size: 0.85rem;
   display: flex; align-items: center; justify-content: center;
-  color: var(--text-2); transition: background 0.15s;
+  color: var(--text-2); transition: all 0.15s; z-index: 1;
+  box-shadow: 1px 2px 0 var(--tan-3);
 }
-.modal-close-btn:hover { background: var(--tan-3); }
+.modal-close-btn:hover { background: var(--tan-3); transform: scale(1.1); }
 /* ── Create modal specific ───────────────────────────────────────*/
 .create-modal-header {
   text-align: center; margin-bottom: 1.4rem;
