@@ -52,7 +52,7 @@ auth.onAuthStateChanged(async user => {
     loadMyGardens();
     initWeather();
     if (typeof renderWhatToPlantNow === 'function') renderWhatToPlantNow();
-    if (typeof initMessaging === 'function') initMessaging();
+
 
     // Show onboarding overlay if not yet completed (non-blocking — app loads behind it)
     if (!userData.onboardingDone) {
@@ -76,7 +76,7 @@ async function ensureUserDoc(user) {
     await ref.set({
       uid: user.uid, displayName: user.displayName || user.email,
       email: user.email, photoURL: user.photoURL || '',
-      appMode: 'standard', featureOverrides: {}, onboardingDone: false,
+      appMode: 'grower', featureOverrides: {}, onboardingDone: false,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
   } else {

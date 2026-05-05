@@ -1,12 +1,11 @@
 // ================================================================
-// MODE.JS — app mode system (simple | standard | advanced)
-//           and per-feature visibility toggles
+// MODE.JS — app mode system (beginner | grower | expert)
 // ================================================================
 
-// ── Mode definitions ──────────────────────────────────────────────
 const MODES = {
-  simple: {
-    label: '🌱 Simple',
+  beginner: {
+    label: '🌱 Beginner',
+    description: 'Just getting started — keep it simple!',
     features: {
       tasks:          true,
       weather:        true,
@@ -26,8 +25,9 @@ const MODES = {
       succession:     false,
     }
   },
-  standard: {
-    label: '🌿 Standard',
+  grower: {
+    label: '🌿 Grower',
+    description: 'Getting serious about your garden',
     features: {
       tasks:          true,
       weather:        true,
@@ -47,8 +47,9 @@ const MODES = {
       succession:     false,
     }
   },
-  advanced: {
-    label: '🌳 Advanced',
+  expert: {
+    label: '🌳 Expert',
+    description: 'Full control — every tool at your fingertips',
     features: {
       tasks:          true,
       weather:        true,
@@ -90,7 +91,7 @@ const FEATURE_LABELS = {
 };
 
 // ── Runtime state ─────────────────────────────────────────────────
-let appMode     = 'standard';
+let appMode     = 'grower';
 let appFeatures = { ...MODES.standard.features };
 
 // ── Load from Firestore ───────────────────────────────────────────
@@ -98,14 +99,14 @@ async function loadUserMode(uid) {
   try {
     const doc = await db.collection('users').doc(uid).get();
     const data = doc.data() || {};
-    appMode = data.appMode || 'standard';
+    appMode = data.appMode || 'grower';
     // Merge saved overrides on top of mode defaults
     appFeatures = {
       ...MODES[appMode].features,
       ...(data.featureOverrides || {}),
     };
   } catch (e) {
-    appMode = 'standard';
+    appMode = 'grower';
     appFeatures = { ...MODES.standard.features };
   }
   applyMode();

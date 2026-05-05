@@ -119,10 +119,10 @@
       <h2>How do you want to use<br>the app?</h2>
       <p class="ob-sub">You can always change this in settings</p>
       <div class="mode-cards">
-        <div class="mode-card" data-mode="simple">
+        <div class="mode-card" data-mode="beginner">
           <div class="mode-emoji">🌱</div>
-          <div class="mode-name">Simple</div>
-          <div class="mode-desc">Garden grid, basic tasks, and weather. Perfect for getting started.</div>
+          <div class="mode-name">Beginner</div>
+          <div class="mode-desc">Just getting started! Keep it simple and fun.</div>
           <ul class="mode-features">
             <li>✓ Garden grid</li>
             <li>✓ Basic tasks</li>
@@ -130,25 +130,25 @@
             <li>✓ Plant lookup</li>
           </ul>
         </div>
-        <div class="mode-card selected" data-mode="standard">
+        <div class="mode-card selected" data-mode="grower">
           <div class="mode-badge">Most popular</div>
           <div class="mode-emoji">🌿</div>
-          <div class="mode-name">Standard</div>
-          <div class="mode-desc">Everything in Simple plus planning tools and tracking.</div>
+          <div class="mode-name">Grower</div>
+          <div class="mode-desc">Getting serious! Add planning tools and track your progress.</div>
           <ul class="mode-features">
-            <li>✓ Everything in Simple</li>
+            <li>✓ Everything in Beginner</li>
             <li>✓ Harvest & spending log</li>
             <li>✓ Calendar & journal</li>
             <li>✓ Frost date alerts</li>
             <li>✓ Plant care reminders</li>
           </ul>
         </div>
-        <div class="mode-card" data-mode="advanced">
+        <div class="mode-card" data-mode="expert">
           <div class="mode-emoji">🌳</div>
-          <div class="mode-name">Advanced</div>
-          <div class="mode-desc">Full toolkit for experienced gardeners who track everything.</div>
+          <div class="mode-name">Expert</div>
+          <div class="mode-desc">Full toolkit for seasoned gardeners who track everything.</div>
           <ul class="mode-features">
-            <li>✓ Everything in Standard</li>
+            <li>✓ Everything in Grower</li>
             <li>✓ Crop rotation tracker</li>
             <li>✓ Seed inventory</li>
             <li>✓ Soil amendment log</li>
@@ -157,7 +157,7 @@
           </ul>
         </div>
       </div>
-      <button class="ob-next-btn" id="confirmModeBtn">Continue →</button>
+      <button class="ob-next-btn" id="confirmModeBtn">Let's grow! 🌱</button>
     </div>
   </div>
 
@@ -321,13 +321,13 @@
         <div class="garden-page-actions">
           <button id="mergeModeBtn" class="header-action-btn">⊞</button>
           <button id="gardenTasksBtn" class="header-action-btn">📋</button>
-          <button id="gardenJournalBtn" class="header-action-btn feature-standard">📓</button>
-          <button id="gardenTrackingBtn" class="header-action-btn feature-standard">📊</button>
-          <button id="gardenCropRotationBtn" class="header-action-btn feature-advanced" title="Crop Rotation" style="display:none">🔄</button>
-          <button id="gardenSuccessionBtn" class="header-action-btn feature-advanced" title="Succession Planting" style="display:none">🗓</button>
-          <button id="gardenSoilLogBtn" class="header-action-btn feature-advanced" title="Soil Amendments" style="display:none">🪱</button>
-          <button id="gardenPestLogBtn" class="header-action-btn feature-advanced" title="Pest & Disease Log" style="display:none">🐛</button>
-          <button id="gardenYieldBtn" class="header-action-btn feature-advanced" title="Yield Analytics" style="display:none">📈</button>
+          <button id="gardenJournalBtn" class="header-action-btn feature-grower">📓</button>
+          <button id="gardenTrackingBtn" class="header-action-btn feature-grower">📊</button>
+          <button id="gardenCropRotationBtn" class="header-action-btn feature-expert" title="Crop Rotation" style="display:none">🔄</button>
+          <button id="gardenSuccessionBtn" class="header-action-btn feature-expert" title="Succession Planting" style="display:none">🗓</button>
+          <button id="gardenSoilLogBtn" class="header-action-btn feature-expert" title="Soil Amendments" style="display:none">🪱</button>
+          <button id="gardenPestLogBtn" class="header-action-btn feature-expert" title="Pest & Disease Log" style="display:none">🐛</button>
+          <button id="gardenYieldBtn" class="header-action-btn feature-expert" title="Yield Analytics" style="display:none">📈</button>
           <button id="gardenSettingsBtn" class="header-action-btn" style="display:none">⚙</button>
         </div>
       </div>
@@ -350,7 +350,7 @@
                 <button class="panel-tab active" id="tabPlot">Plot</button>
                 <button class="panel-tab" id="tabTasks">📋 Tasks</button>
                 <button class="panel-tab" id="tabSubgrid">🔲 Sub-grid</button>
-                <button class="panel-tab feature-standard" id="tabHistory">📷 History</button>
+                <button class="panel-tab feature-grower" id="tabHistory">📷 History</button>
               </div>
               <div id="panelPlot">
                 <div class="field">
@@ -477,10 +477,6 @@
       <span class="mob-nav-icon">📅</span>
       <span>Calendar</span>
     </button>
-    <button class="mob-nav-btn" id="mobMessagesBtn">
-      <span class="mob-nav-icon">💬<span class="mob-badge" id="mobMsgBadge" style="display:none"></span></span>
-      <span>Messages</span>
-    </button>
     <button class="mob-nav-btn" id="profileNavBtn">
       <span class="mob-nav-icon">👤<span class="mob-badge" id="mobNotifBadge" style="display:none"></span></span>
       <span id="profileNavLabel">Profile</span>
@@ -512,9 +508,9 @@
     <div class="sheet-section">
       <div class="sheet-section-title">Garden Mode</div>
       <div class="mode-toggle-row">
-        <button class="mode-toggle-btn" data-mode="simple">🌱 Simple</button>
-        <button class="mode-toggle-btn active" data-mode="standard">🌿 Standard</button>
-        <button class="mode-toggle-btn" data-mode="advanced">🌳 Advanced</button>
+        <button class="mode-toggle-btn" data-mode="beginner">🌱 Beginner</button>
+        <button class="mode-toggle-btn active" data-mode="grower">🌿 Grower</button>
+        <button class="mode-toggle-btn" data-mode="expert">🌳 Expert</button>
       </div>
     </div>
 
@@ -773,7 +769,7 @@
       <button class="panel-tab active" id="mTabPlot">Plot</button>
       <button class="panel-tab" id="mTabTasks">📋 Tasks</button>
       <button class="panel-tab" id="mTabSubgrid">🔲 Sub-grid</button>
-      <button class="panel-tab feature-standard" id="mTabHistory">📷 History</button>
+      <button class="panel-tab feature-grower" id="mTabHistory">📷 History</button>
     </div>
     <div id="mPanelPlot">
       <div class="field"><label>Plant / Title</label><input id="modal-titleInput" type="text" placeholder="e.g. Tomato Bed"/></div>
@@ -1174,8 +1170,6 @@
 <script src="js/weather.js"></script>
 <script src="js/advanced.js"></script>
 <script src="js/batch4.js"></script>
-<script src="js/messaging.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="js/batch6.js"></script>
 </body>
 </html>
