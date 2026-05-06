@@ -218,8 +218,9 @@ function openTasksTabForTile(id) {
 // ── Open panel ────────────────────────────────────────────────────
 function openPanel(id) {
   activeId = id;
-  document.getElementById('defaultInfo').style.display = 'none';
-  document.getElementById('editInfo').style.display    = 'block';
+  document.getElementById('defaultInfo').style.display      = 'none';
+  document.getElementById('desktopTasksView').style.display = 'none';
+  document.getElementById('editInfo').style.display         = 'block';
 
   document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
   const { r, c } = { r: +id.match(/r(\d+)/)[1], c: +id.match(/c(\d+)/)[1] };

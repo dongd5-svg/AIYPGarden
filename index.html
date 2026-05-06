@@ -303,6 +303,31 @@
                 <p>Tap any tile to view or edit it</p>
               </div>
             </div>
+
+            <!-- Desktop tasks view — shows inside panel instead of full overlay -->
+            <div id="desktopTasksView" style="display:none">
+              <div class="desktop-tasks-header">
+                <button class="back-btn" id="desktopTasksBackBtn">←</button>
+                <h3>All Tasks</h3>
+                <button class="btn-add-task" id="desktopTasksAddBtn">＋ Add</button>
+              </div>
+              <div class="tasks-filter-bar desktop-tasks-filter">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="todo">To Do</button>
+                <button class="filter-btn" data-filter="inprogress">Doing</button>
+                <button class="filter-btn" data-filter="done">Done</button>
+                <div class="filter-sep"></div>
+                <button class="filter-btn" data-filter="urgent">🔴</button>
+                <button class="filter-btn" data-filter="high">🟠</button>
+                <button class="filter-btn" data-filter="medium">🟡</button>
+                <button class="filter-btn" data-filter="low">🔵</button>
+              </div>
+              <div id="desktopTasksList" style="padding:0 0.5rem"></div>
+              <div id="desktopTasksEmpty" style="display:none;padding:2rem 1rem;text-align:center">
+                <div class="empty-icon">📋</div><p>No tasks yet</p>
+              </div>
+            </div>
+
             <div id="editInfo" style="display:none">
               <div class="panel-tabs">
                 <button class="panel-tab active" id="tabPlot">Plot</button>

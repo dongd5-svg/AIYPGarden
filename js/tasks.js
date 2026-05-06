@@ -37,63 +37,90 @@ function cleanupTasks() {
 // ── Full garden tasks view ────────────────────────────────────────
 let tasksFilter = 'all';
 
-document.getElementById('gardenTasksBtn').onclick = () => {
-  tasksFilter = 'all';
-  document.querySelectorAll('.filter-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.filter === 'all'));
-  openTasksView();
-};
-document.getElementById('tasksViewBackBtn').onclick = () =>
-  document.getElementById('tasks-view-overlay').classList.remove('open');
+document.getElementById('gardenTasksBtn').onclick = () => openTasksView();
+
+// Mobile back button
+document.getElementById('tasksViewBackBtn').onclick = () => closeTasksView();
+document.getElementById('tasks-view-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('tasks-view-overlay')) closeTasksView();
+});
 document.getElementById('tasksViewAddBtn').onclick = () => {
-  // Close the tasks view first so the modal isn't hidden behind it
-  document.getElementById('tasks-view-overlay').classList.remove('open');
+  closeTasksView();
   setTimeout(() => openTaskModal(null, null), 50);
 };
 
+// Desktop panel back + add buttons
+document.getElementById('desktopTasksBackBtn').onclick = () => closeTasksView();
+document.getElementById('desktopTasksAddBtn').onclick  = () => {
+  closeTasksView();
+  setTimeout(() => openTaskModal(null, null), 50);
+};
+
+// Filter buttons — handle both mobile and desktop filter bars
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.onclick = () => {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    // Sync all filter buttons with same data-filter
+    document.querySelectorAll('.filter-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.filter === btn.dataset.filter));
     tasksFilter = btn.dataset.filter;
     renderTasksView();
   };
 });
 
+function isDesktop() { return window.innerWidth >= 768; }
+
 function openTasksView() {
-  document.getElementById('tasksViewTitle').textContent =
-    (currentGardenData?.name || 'Garden') + ' — Tasks';
-  document.getElementById('tasks-view-overlay').classList.add('open');
-  renderTasksView();
+  tasksFilter = 'all';
+  document.querySelectorAll('.filter-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.filter === 'all'));
+
+  if (isDesktop()) {
+    // Show inside the side panel
+    document.getElementById('defaultInfo').style.display = 'none';
+    document.getElementById('editInfo').style.display    = 'none';
+    document.getElementById('desktopTasksView').style.display = 'block';
+    renderTasksView();
+  } else {
+    // Mobile: full-screen overlay
+    document.getElementById('tasksViewTitle').textContent =
+      (currentGardenData?.name || 'Garden') + ' — Tasks';
+    document.getElementById('tasks-view-overlay').classList.add('open');
+    renderTasksView();
+  }
+}
+
+function closeTasksView() {
+  document.getElementById('tasks-view-overlay').classList.remove('open');
+  document.getElementById('desktopTasksView').style.display = 'none';
+  document.getElementById('defaultInfo').style.display = 'block';
 }
 
 function renderTasksView() {
-  const list  = document.getElementById('tasks-list');
-  const empty = document.getElementById('tasks-empty');
+  // Render into whichever list is visible
+  const isDesk = isDesktop();
+  const list  = document.getElementById(isDesk ? 'desktopTasksList' : 'tasks-list');
+  const empty = document.getElementById(isDesk ? 'desktopTasksEmpty' : 'tasks-empty');
   list.innerHTML = '';
 
   let tasks = Object.values(tasksData);
-
-  // Filter
   if (tasksFilter === 'todo')       tasks = tasks.filter(t => t.status === 'todo');
   else if (tasksFilter === 'inprogress') tasks = tasks.filter(t => t.status === 'inprogress');
   else if (tasksFilter === 'done')  tasks = tasks.filter(t => t.status === 'done');
   else if (['urgent','high','medium','low'].includes(tasksFilter))
     tasks = tasks.filter(t => t.priority === tasksFilter);
 
-  // Sort: priority then due date then createdAt
   tasks.sort((a, b) => {
     const pi = PRIORITY_ORDER.indexOf(a.priority||'none');
     const qi = PRIORITY_ORDER.indexOf(b.priority||'none');
     if (pi !== qi) return pi - qi;
     if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
-    if (a.dueDate) return -1;
-    if (b.dueDate) return 1;
+    if (a.dueDate) return -1; if (b.dueDate) return 1;
     return 0;
   });
 
-  if (tasks.length === 0) { empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
+  if (tasks.length === 0) { empty.style.display = 'block'; list.style.display = 'none'; return; }
+  empty.style.display = 'none'; list.style.display = 'flex';
+  list.style.flexDirection = 'column'; list.style.gap = '0.6rem';
   tasks.forEach(task => list.appendChild(buildTaskCard(task, false)));
 }
 
