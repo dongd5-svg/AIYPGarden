@@ -703,11 +703,12 @@ body.merge-mode .tile.merge-selected { opacity: 1; border: 2px solid #e67e00 !im
 /* ═══ MODALS ══════════════════════════════════════════════════════*/
 #create-modal-overlay, #settings-modal-overlay, #task-modal-overlay,
 #journal-modal-overlay, #tracking-modal-overlay, #photo-modal-overlay,
-#tasks-view-overlay, #profile-sheet-overlay {
+#profile-sheet-overlay {
   display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.4); z-index: 3000;
+  background: rgba(0,0,0,0.4); z-index: 4000;
   align-items: center; justify-content: center; padding: 1rem;
 }
+#tasks-view-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 3000; align-items: center; justify-content: center; padding: 1rem; }
 #create-modal-overlay.open, #settings-modal-overlay.open, #task-modal-overlay.open,
 #journal-modal-overlay.open, #tracking-modal-overlay.open, #photo-modal-overlay.open {
   display: flex;

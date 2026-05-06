@@ -45,7 +45,11 @@ document.getElementById('gardenTasksBtn').onclick = () => {
 };
 document.getElementById('tasksViewBackBtn').onclick = () =>
   document.getElementById('tasks-view-overlay').classList.remove('open');
-document.getElementById('tasksViewAddBtn').onclick = () => openTaskModal(null, null);
+document.getElementById('tasksViewAddBtn').onclick = () => {
+  // Close the tasks view first so the modal isn't hidden behind it
+  document.getElementById('tasks-view-overlay').classList.remove('open');
+  setTimeout(() => openTaskModal(null, null), 50);
+};
 
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.onclick = () => {
