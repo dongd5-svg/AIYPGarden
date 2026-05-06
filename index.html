@@ -628,27 +628,75 @@
 <!-- Task modal -->
 <div id="task-modal-overlay">
   <div id="task-modal">
-    <button class="modal-close-btn" id="taskModalCloseBtn">✕</button>
-    <h2 id="taskModalTitle">New Task</h2>
-    <div class="field"><label>Title</label><input id="taskTitleInput" type="text" placeholder="e.g. Plant tomatoes" maxlength="80"/></div>
-    <div class="field"><label>Description</label><textarea id="taskDescInput" rows="2" placeholder="Details…"></textarea></div>
-    <div class="field"><label>Priority</label><div class="priority-picker" id="priorityPicker"><button class="priority-btn active" data-val="none">None</button><button class="priority-btn" data-val="low">🔵 Low</button><button class="priority-btn" data-val="medium">🟡 Med</button><button class="priority-btn" data-val="high">🟠 High</button><button class="priority-btn" data-val="urgent">🔴 Urgent</button></div></div>
-    <div class="field"><label>Status</label><div class="status-picker" id="statusPicker"><button class="status-btn active" data-val="todo">To Do</button><button class="status-btn" data-val="inprogress">In Progress</button><button class="status-btn" data-val="done">✓ Done</button></div></div>
-    <div class="field"><label>Due date</label><input id="taskDueInput" type="date"/></div>
-    <div class="field"><label>Recurring</label><div class="recurring-row"><select id="recurringSelect"><option value="none">Not recurring</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="custom">Every X days</option></select><input id="recurringDays" type="number" min="1" max="365" placeholder="days" style="display:none;width:80px"/></div></div>
-    <div class="field" id="taskAssignField"><label>Assign to</label><select id="taskAssignSelect"><option value="">Unassigned</option></select></div>
-    <div class="field"><label>Linked plots</label><div id="taskTilePicker" class="task-tile-picker"></div></div>
-    <div class="task-modal-actions">
-      <button class="btn-save-task" id="saveTaskBtn">Save Task</button>
-      <button class="btn-delete-task" id="deleteTaskBtn" style="display:none">🗑 Delete</button>
+    <div class="modal-header">
+      <button class="modal-close-btn" id="taskModalCloseBtn">✕</button>
+      <h2 id="taskModalTitle">New Task</h2>
     </div>
-    <div id="taskCommentsSection" style="display:none">
-      <div class="settings-divider"></div>
-      <h3 style="margin:0 0 0.7rem;font-size:1rem">Comments</h3>
-      <div id="taskCommentsList"></div>
-      <div class="task-comment-input-row">
-        <input id="taskCommentInput" type="text" placeholder="Add a comment…"/>
-        <button id="taskCommentSubmit">Send</button>
+    <div class="modal-body">
+      <div class="field">
+        <label>Title</label>
+        <input id="taskTitleInput" type="text" placeholder="e.g. Water the tomatoes" maxlength="80"/>
+      </div>
+      <div class="field">
+        <label>Description <span class="field-optional">optional</span></label>
+        <textarea id="taskDescInput" rows="2" placeholder="Any notes…"></textarea>
+      </div>
+      <div class="field">
+        <label>Priority</label>
+        <div class="pill-picker" id="priorityPicker">
+          <button class="pill-btn active" data-val="none">None</button>
+          <button class="pill-btn" data-val="low">🔵 Low</button>
+          <button class="pill-btn" data-val="medium">🟡 Med</button>
+          <button class="pill-btn" data-val="high">🟠 High</button>
+          <button class="pill-btn" data-val="urgent">🔴 Urgent</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <div class="pill-picker" id="statusPicker">
+          <button class="pill-btn active" data-val="todo">To Do</button>
+          <button class="pill-btn" data-val="inprogress">In Progress</button>
+          <button class="pill-btn" data-val="done">✓ Done</button>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field" style="flex:1">
+          <label>Due date</label>
+          <input id="taskDueInput" type="date"/>
+        </div>
+        <div class="field" style="flex:1">
+          <label>Recurring</label>
+          <select id="recurringSelect" class="field-select">
+            <option value="none">Not recurring</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="custom">Every X days</option>
+          </select>
+        </div>
+      </div>
+      <input id="recurringDays" type="number" min="1" max="365" placeholder="Number of days" style="display:none" class="field-input"/>
+      <div class="field" id="taskAssignField">
+        <label>Assign to</label>
+        <select id="taskAssignSelect" class="field-select">
+          <option value="">Unassigned</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Linked plots</label>
+        <div id="taskTilePicker" class="task-tile-picker"></div>
+      </div>
+      <div class="task-modal-actions">
+        <button class="btn btn-primary" id="saveTaskBtn">Save Task</button>
+        <button class="btn btn-danger" id="deleteTaskBtn" style="display:none">Delete</button>
+      </div>
+      <div id="taskCommentsSection" style="display:none">
+        <div class="field-divider"></div>
+        <h3 class="section-label">Comments</h3>
+        <div id="taskCommentsList"></div>
+        <div class="task-comment-input-row">
+          <input id="taskCommentInput" type="text" placeholder="Add a comment…"/>
+          <button id="taskCommentSubmit" class="btn btn-primary">Send</button>
+        </div>
       </div>
     </div>
   </div>

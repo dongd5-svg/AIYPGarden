@@ -224,9 +224,9 @@ function openTaskModal(taskId, defaultTileId) {
     taskLinkedTiles.push(defaultTileId);
 
   // Sync pickers
-  document.querySelectorAll('.priority-btn').forEach(b =>
+  document.querySelectorAll('.pill-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.val === taskPriority));
-  document.querySelectorAll('.status-btn').forEach(b =>
+  document.querySelectorAll('.pill-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.val === taskStatus));
 
   // Recurring
@@ -276,17 +276,17 @@ function populateAssignDropdown(selected) {
 }
 
 // Priority / status pickers
-document.querySelectorAll('.priority-btn').forEach(btn => {
+document.querySelectorAll('.pill-btn').forEach(btn => {
   btn.onclick = () => {
     taskPriority = btn.dataset.val;
-    document.querySelectorAll('.priority-btn').forEach(b =>
+    document.querySelectorAll('.pill-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.val === taskPriority));
   };
 });
-document.querySelectorAll('.status-btn').forEach(btn => {
+document.querySelectorAll('.pill-btn').forEach(btn => {
   btn.onclick = () => {
     taskStatus = btn.dataset.val;
-    document.querySelectorAll('.status-btn').forEach(b =>
+    document.querySelectorAll('.pill-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.val === taskStatus));
   };
 });

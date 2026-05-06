@@ -660,8 +660,14 @@ mergeCancelBtn.onclick = () => toggleMergeMode(false);
       wireDimInputs('m');
     }
   };
-  document.getElementById('mAddTaskBtn').onclick  = () => openTaskModal(null, activeId);
-  document.getElementById('mAddPhotoBtn').onclick = () => openPhotoModal(activeId);
+  document.getElementById('mAddTaskBtn').onclick  = () => {
+    closeModal(); // close tile sheet first so task modal is visible
+    setTimeout(() => openTaskModal(null, activeId), 220); // wait for close animation
+  };
+  document.getElementById('mAddPhotoBtn').onclick = () => {
+    closeModal();
+    setTimeout(() => openPhotoModal(activeId), 220);
+  };
 
   overlay.addEventListener('click', e => { if (e.target===overlay) closeModal(); });
 
