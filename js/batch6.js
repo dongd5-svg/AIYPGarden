@@ -44,22 +44,20 @@ updateOnlineStatus(); // Check on load
 
 // ── Keyboard shortcuts ────────────────────────────────────────────
 document.addEventListener('keydown', e => {
-  // Escape closes any open modal
+  // Escape closes any open modal/overlay
   if (e.key === 'Escape') {
     const openOverlays = [
       'create-modal-overlay', 'settings-modal-overlay', 'task-modal-overlay',
       'journal-modal-overlay', 'tracking-modal-overlay', 'photo-modal-overlay',
       'crop-rotation-overlay', 'succession-overlay', 'soil-log-overlay',
       'seed-inventory-overlay', 'pest-log-overlay', 'yield-analytics-overlay',
-      'messages-overlay', 'notif-overlay', 'plant-library-overlay',
+      'notif-overlay', 'plant-library-overlay',
       'tasks-view-overlay', 'profile-sheet-overlay',
     ];
     for (const id of openOverlays) {
       const el = document.getElementById(id);
       if (!el) continue;
-      const isOpen = el.classList.contains('open') ||
-                     (el.style.display && el.style.display !== 'none');
-      if (isOpen) {
+      if (el.classList.contains('open') || (el.style.display && el.style.display !== 'none')) {
         el.classList.remove('open');
         el.style.display = 'none';
         break;
@@ -67,13 +65,10 @@ document.addEventListener('keydown', e => {
     }
   }
 
-  // Ctrl/Cmd + S saves active tile
+  // Ctrl/Cmd + S saves active tile panel
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
     const saveBtn = document.getElementById('saveBtn');
-    if (saveBtn && document.getElementById('editInfo')?.style.display !== 'none') {
-      e.preventDefault();
-      saveBtn.click();
-    }
+    if (saveBtn) { e.preventDefault(); saveBtn.click(); }
   }
 });
 

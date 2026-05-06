@@ -140,7 +140,12 @@ function openGardenPage(gardenId, gardenData, isOwn) {
   // Push garden ID to URL so it's shareable
   const url = new URL(window.location.href);
   url.searchParams.set('g', gardenId);
-  window.history.pushState({ gardenId }, '', url);
+  // replaceState if we're already on a ?g= URL (deep link), pushState otherwise
+  if (new URL(window.location.href).searchParams.get('g')) {
+    window.history.replaceState({ gardenId }, '', url);
+  } else {
+    window.history.pushState({ gardenId }, '', url);
+  }
 
   applyMode();
   initTiles(gardenId, gardenData);
@@ -150,25 +155,41 @@ function openGardenPage(gardenId, gardenData, isOwn) {
 }
 
 function exitGarden() {
-  cleanupTiles(); cleanupTasks();
+  if (typeof cleanupTiles === 'function') cleanupTiles();
+  if (typeof cleanupTasks === 'function') cleanupTasks();
   currentGardenId = null; currentGardenData = null; isGardenOwner = false;
   // Clean garden ID from URL
   const url = new URL(window.location.href);
   url.searchParams.delete('g');
-  window.history.pushState({}, '', url);
+  window.history.replaceState({}, '', url);
 }
 
 document.getElementById('backBtn').onclick = () => { exitGarden(); navigateTo('home'); };
 
-// Share button — copies current garden URL to clipboard
+// Share button — uses Web Share API on mobile, clipboard on desktop
 document.getElementById('gardenShareBtn').onclick = async () => {
-  const url = window.location.href;
+  const url  = window.location.href;
+  const name = currentGardenData?.name || 'Garden';
+  // Web Share API works natively on mobile (shows share sheet)
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: name, url });
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return; // user cancelled — fine
+    }
+  }
+  // Desktop fallback — clipboard
   try {
     await navigator.clipboard.writeText(url);
-    showToast('Link copied! 🔗 Share it with anyone');
+    showToast('Link copied! 🔗');
   } catch {
-    // Fallback for browsers that block clipboard
-    prompt('Copy this link:', url);
+    // Last resort — select-all prompt
+    const inp = document.createElement('input');
+    inp.value = url; document.body.appendChild(inp);
+    inp.select(); document.execCommand('copy');
+    document.body.removeChild(inp);
+    showToast('Link copied! 🔗');
   }
 };
 
@@ -183,17 +204,27 @@ async function handleDeepLink() {
   const gid = new URL(window.location.href).searchParams.get('g');
   if (!gid) return false;
   try {
-    const doc = await db.collection('gardens').doc(gid).get();
-    if (!doc.exists) return false;
-    const data = doc.data();
-    // Only open if public or user is owner/collaborator
-    const isOwn  = currentUser && data.ownerId === currentUser.uid;
-    const isCollab = currentUser && data.collaboratorEmails?.includes(currentUser.email?.toLowerCase());
+    const snap = await db.collection('gardens').doc(gid).get();
+    if (!snap.exists) {
+      console.warn('Deep link: garden not found', gid);
+      return false;
+    }
+    const data = snap.data();
+    const isOwn    = currentUser && data.ownerId === currentUser.uid;
+    const isCollab = currentUser &&
+      (data.collaboratorEmails || []).includes((currentUser.email || '').toLowerCase());
     const isPublic = data.visibility === 'public';
-    if (!isOwn && !isCollab && !isPublic) return false;
+    if (!isOwn && !isCollab && !isPublic) {
+      console.warn('Deep link: no permission for garden', gid);
+      showToast('This garden is private', 'error');
+      return false;
+    }
     openGardenPage(gid, data, isOwn || false);
     return true;
-  } catch { return false; }
+  } catch (e) {
+    console.error('Deep link error:', e);
+    return false;
+  }
 }
 
 // ── Color swatches ────────────────────────────────────────────────

@@ -197,9 +197,6 @@
       <button class="nav-btn" data-page="calendar">📅 Calendar</button>
     </div>
     <div class="nav-user">
-      <button class="nav-icon-btn" id="desktopMessagesBtn" title="Messages">
-        💬<span class="nav-badge" id="desktopMsgBadge" style="display:none"></span>
-      </button>
       <button class="nav-icon-btn" id="desktopNotifBtn" title="Notifications">
         🔔<span class="nav-badge" id="desktopNotifBadge" style="display:none"></span>
       </button>
@@ -618,12 +615,10 @@
       <label>Collaborators</label><p class="field-hint">Can view and edit even if private.</p>
       <div class="collab-input-row"><input id="collabEmailInput" type="email" placeholder="friend@example.com"/><button class="btn-add-collab" id="addCollabBtn">Add</button></div>
       <div id="collabList" class="collab-list"></div>
-      <button class="sheet-tool-btn" id="messageCollabsBtn" style="margin-top:0.6rem;display:none">💬 Message collaborators</button>
     </div>
     <div class="settings-divider"></div>
     <div class="field">
       <label>Export</label>
-      <button class="sheet-tool-btn" id="exportGardenPdfBtn">📄 Export garden as PDF</button>
     </div>
     <div class="settings-divider"></div>
     <div class="danger-zone"><p class="danger-label">⚠ Danger Zone</p><button class="btn-danger" id="deleteGardenBtn">🗑 Delete this garden</button></div>
@@ -1088,37 +1083,6 @@
   </div>
 </div>
 
-<!-- MESSAGES OVERLAY -->
-<div id="messages-overlay">
-  <div id="messages-modal">
-    <div class="adv-modal-handle"></div>
-    <div class="msg-header">
-      <div class="msg-header-left">
-        <button class="back-btn" id="msgBackToListBtn" style="display:none">←</button>
-        <h2 id="msgHeaderTitle">Messages</h2>
-      </div>
-      <button class="modal-close-btn" id="messagesCloseBtn">✕</button>
-    </div>
-
-    <!-- Conversation list -->
-    <div id="msg-conv-list-view">
-      <div id="msg-conv-list" class="msg-conv-list"></div>
-      <div id="msg-conv-empty" class="adv-empty" style="display:none">
-        <div class="empty-icon">💬</div>
-        <p>No conversations yet.<br>Open a garden you share with others to message.</p>
-      </div>
-    </div>
-
-    <!-- Single conversation view -->
-    <div id="msg-chat-view" style="display:none">
-      <div id="msg-messages-list" class="msg-messages-list"></div>
-      <div class="msg-input-bar">
-        <input id="msgInput" type="text" placeholder="Message…" maxlength="1000" autocomplete="off"/>
-        <button id="msgSendBtn" class="msg-send-btn">➤</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- NOTIFICATIONS OVERLAY -->
 <div id="notif-overlay">

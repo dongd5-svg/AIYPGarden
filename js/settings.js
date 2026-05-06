@@ -133,13 +133,6 @@ async function addCollaborator() {
   input.value = '';
   renderCollabList();
   showToast(`${email} added as collaborator`);
-  // Notify the collaborator if they have an account
-  if (typeof notifyCollabAdded === 'function') {
-    notifyCollabAdded(email, currentGardenId, currentGardenData?.name || '');
-  }
-  // Show message collaborators button
-  const msgBtn = document.getElementById('messageCollabsBtn');
-  if (msgBtn) msgBtn.style.display = 'block';
 }
 
 async function removeCollaborator(email) {
