@@ -5,7 +5,7 @@
 // own offline persistence separately via enablePersistence().
 // ================================================================
 
-const CACHE_NAME    = 'aiyp-v2';
+const CACHE_NAME    = 'aiyp-v3';
 const SHELL_ASSETS  = [
   './',
   './index.html',
